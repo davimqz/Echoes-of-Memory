@@ -16,6 +16,11 @@ typedef struct Node {
 } Node;
 
 typedef struct {
+    Node *start;
+    int len;
+} Cortex;
+
+typedef struct {
     int lines;
     int colums;
     int cell_width;
