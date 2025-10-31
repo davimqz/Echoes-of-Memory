@@ -28,6 +28,14 @@ typedef struct {
     int margin;
 } BoardView;
 
+static int cortex_len (const Cortex* cortex) {
+    if (cortex == NULL) {
+        return 0;
+    } else {
+        return cortex -> len;
+    }
+}
+
 Node *createNode (Card card) {
     Node *novo = (Node*)malloc(sizeof(Node));
     if (!novo) {
