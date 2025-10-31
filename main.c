@@ -7,3 +7,8 @@ typedef struct Card {
     int colums;
 } Card;
 
+typedef struct Node {
+    Card card;
+    struct No *next;
+} No;
+
