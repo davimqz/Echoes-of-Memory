@@ -76,5 +76,5 @@ Node *cortex_search_pos (Cortex* cortex, int pos) {
         init = init -> next;
         i++;
     }
-    return p;
+    return init;
 }
