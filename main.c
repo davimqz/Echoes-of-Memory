@@ -62,3 +62,19 @@ void cortex_add_init (Cortex* cortex, Card card) {
     cortex -> start = novo;
     cortex -> len += 1;
 }
+
+Node *cortex_search_pos (Cortex* cortex, int pos) {
+    if (!cortex || pos < 0) {
+        return NULL;
+    }
+
+    Node *init = cortex -> start;
+
+    int i = 0;
+
+    while (init && i < pos) {
+        init = init -> next;
+        i++;
+    }
+    return p;
+}
