@@ -47,3 +47,18 @@ Node *createNode (Card card) {
     return novo; 
 }
 
+void cortex_add_init (Cortex* cortex, Card card) {
+    if (!cortex) {
+        return;
+    }
+
+    Node *novo = createNode(card);
+
+    if (!cortex) {
+        return;
+    }
+
+    novo -> next = cortex -> start;
+    cortex -> start = novo;
+    cortex -> len += 1;
+}
