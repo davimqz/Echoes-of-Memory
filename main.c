@@ -12,3 +12,10 @@ typedef struct Node {
     struct No *next;
 } No;
 
+typedef struct {
+    int lines;
+    int colums;
+    int cell_width;
+    int cell_height;
+    int margin;
+} BoardView;
