@@ -78,3 +78,20 @@ Node *cortex_search_pos (Cortex* cortex, int pos) {
     }
     return init;
 }
+
+void cortex_embaralhar (Cortex *cortex, int i, int j) {
+    if (!cortex || i == j || i < 0 || j < 0) {
+        return;
+    }
+
+    Node *a = cortex_search_pos(cortex, i);
+    Node *b = cortex_search_pos(cortex, j);
+
+    if (!a || !b) {
+        return;
+    }
+
+    Card temp = a -> card;
+    a -> card = b -> card;
+    b -> card = temp;
+}
