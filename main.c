@@ -79,7 +79,7 @@ Node *cortex_search_pos (Cortex* cortex, int pos) {
     return init;
 }
 
-void cortex_embaralhar (Cortex *cortex, int i, int j) {
+void cortex_swap_pos (Cortex *cortex, int i, int j) {
     if (!cortex || i == j || i < 0 || j < 0) {
         return;
     }
@@ -94,4 +94,35 @@ void cortex_embaralhar (Cortex *cortex, int i, int j) {
     Card temp = a -> card;
     a -> card = b -> card;
     b -> card = temp;
+}
+
+void cortex_embaralhar (Cortex *cortex, unsigned seed) {
+    if (!cortex || cortex -> len <= 1) {
+        return;
+    }
+
+    int n = cortex -> len;
+
+    Node **v = (Node*)malloc(sizeof(Node*) * n);
+
+    if (!v) {
+        return;
+    }
+
+    Node *p = cortex -> start;
+
+    for (int i = 0; i < n; i++) {
+        v[i] = p;
+        p = p -> next;
+    }
+
+    srand(seed);
+
+    for (int i = n - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        Card temp = v[i] -> card;
+        v[i] -> card = v[j] -> card;
+        v[j] -> card = temp;
+    }
+    free(v);
 }
