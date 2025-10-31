@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 typedef struct Card {
     int id;
     int isTurned;
@@ -10,7 +13,7 @@ typedef struct Card {
 typedef struct Node {
     Card card;
     struct No *next;
-} No;
+} Node;
 
 typedef struct {
     int lines;
@@ -19,3 +22,15 @@ typedef struct {
     int cell_height;
     int margin;
 } BoardView;
+
+Node *createNode (Card card) {
+    Node *novo = (Node*)malloc(sizeof(Node));
+    if (!novo) {
+        return NULL;
+    }
+
+    novo -> card = card;
+    novo -> next = NULL;
+    return novo; 
+}
+
