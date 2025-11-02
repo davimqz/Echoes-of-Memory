@@ -188,6 +188,24 @@ int cortex_isPar (Cortex *cortex) {
     }
 }
 
+int cortex_Qta_Ativos (Cortex *cortex) {
+    if (!cortex) {
+        return 0;
+    }
+
+    int c = 0;
+
+    Node *p = cortex -> start;
+
+    while (p) {
+        if (!p -> card.isRemoved) {
+            c ++;
+            p = p -> next;
+        }
+        return c;
+    }
+}
+
 int main() {
     printf("Echoes of Chaos");
     return 0;
