@@ -12,7 +12,7 @@ typedef struct Card {
 
 typedef struct Node {
     Card card;
-    struct No *next;
+    struct Node *next;
 } Node;
 
 typedef struct {
@@ -103,7 +103,7 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
 
     int n = cortex -> len;
 
-    Node **v = (Node*)malloc(sizeof(Node*) * n);
+    Node **v = (Node**)malloc(sizeof(Node*) * n);
 
     if (!v) {
         return;
@@ -125,4 +125,29 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
         v[j] -> card = temp;
     }
     free(v);
+}
+
+int cortex_reveal (Cortex *cortex, int line, int column) {
+    if (!cortex) {
+        return 0;
+    }
+
+    Node *p = cortex -> start;
+
+    while (p) {
+        if (!p -> card.isRemoved && p -> card.lines == line && p -> card.colums == column) {
+            if (!p -> card.isTurned) {
+                p -> card.isTurned = 1;
+                p -> card.times_reveled += 1;
+            }
+            return 1;
+        }
+        p = p -> next;
+    }
+    return 0;
+}
+
+int main() {
+    printf("Echoes of Chaos");
+    return 0;
 }
