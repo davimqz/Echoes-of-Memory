@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <raylib.h>
 
 typedef struct Card {
     int id;
@@ -12,7 +13,7 @@ typedef struct Card {
 
 typedef struct Node {
     Card card;
-    struct No *next;
+    struct Node *next;  
 } Node;
 
 typedef struct {
@@ -54,7 +55,7 @@ void cortex_add_init (Cortex* cortex, Card card) {
 
     Node *novo = createNode(card);
 
-    if (!cortex) {
+    if (!novo) {
         return;
     }
 
@@ -103,7 +104,7 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
 
     int n = cortex -> len;
 
-    Node **v = (Node*)malloc(sizeof(Node*) * n);
+    Node **v = (Node**)malloc(sizeof(Node*) * n);
 
     if (!v) {
         return;
@@ -125,4 +126,32 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
         v[j] -> card = temp;
     }
     free(v);
+}
+
+int main() {
+    InitWindow(1280, 720, "Primeiros passos com a Raylib");
+    Texture sprite, bg;
+    sprite = LoadTexture("./assets/car.png");
+    bg = LoadTexture("./assets/background.png");
+
+    float posx = -sprite.width;
+
+
+    while(!WindowShouldClose()) {  
+        posx += 0.2f;
+        if(posx > 1280){
+           posx = -sprite.width; 
+        }
+
+        BeginDrawing();
+        ClearBackground(WHITE);
+            DrawText("Primeiros Passos com a RayLib", 50, 100, 30, WHITE);   // Verde
+            DrawTexture(bg, 0, 0, WHITE);
+            DrawTexture(sprite, posx, 820 - sprite.height, WHITE);
+        EndDrawing();
+    }
+
+    CloseWindow();  
+    
+    return 0;
 }
