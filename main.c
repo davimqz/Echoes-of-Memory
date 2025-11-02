@@ -147,6 +147,47 @@ int cortex_reveal (Cortex *cortex, int line, int column) {
     return 0;
 }
 
+int cortex_isPar (Cortex *cortex) {
+    if (!cortex) {
+        return -1;
+    }
+
+    Node *a = NULL;
+    Node *b = NULL;
+    Node *p = cortex -> start;
+
+    while (p) {
+        if (!p -> card.isRemoved && p -> card.isTurned) {
+            if (!a) {
+                a = p;
+            } else if (!b) {
+                b = p;
+                break;
+            }
+            p = p -> next;
+        }
+        if (!a || !b) {
+            return -1;
+        }
+        if (a -> card.id == b -> card.id) {
+            a -> card.isRemoved = 1;
+            b -> card.isRemoved = 1;
+            a -> card.isTurned = 0;
+            b -> card.isTurned = 0;
+            cortex -> len -= 2;
+            if (cortex -> len < 0) {
+                cortex -> len = 0;
+                return 1;
+            } else {
+                a -> card.isTurned = 0;
+                b -> card.isTurned = 0;
+                return 0;
+            }
+        }
+
+    }
+}
+
 int main() {
     printf("Echoes of Chaos");
     return 0;
