@@ -129,17 +129,17 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
 }
 
 int main() {
-    const int screenWidth = 1024;
-    const int screenHeight = 1024;
+    const int screenWidth = 1920;
+    const int screenHeight = 1080;
 
     InitWindow(screenWidth, screenHeight, "Primeiros passos com a Raylib");
 
     Texture sprite = LoadTexture("./assets/character.png");
-    Texture bg = LoadTexture("./assets/cenario1.jpg");
+    Texture bg = LoadTexture("./assets/cenary1.png");
 
     // Centraliza o sprite
     float posx = (screenWidth - sprite.width) / 2.0f;
-    float posy = (1410 - sprite.height) / 2.0f;
+    float posy = (1500 - sprite.height) / 2.0f;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
