@@ -129,29 +129,33 @@ void cortex_embaralhar (Cortex *cortex, unsigned seed) {
 }
 
 int main() {
-    InitWindow(1280, 720, "Primeiros passos com a Raylib");
-    Texture sprite, bg;
-    sprite = LoadTexture("./assets/car.png");
-    bg = LoadTexture("./assets/background.png");
+    const int screenWidth = 1024;
+    const int screenHeight = 1024;
 
-    float posx = -sprite.width;
+    InitWindow(screenWidth, screenHeight, "Primeiros passos com a Raylib");
 
+    Texture sprite = LoadTexture("./assets/character.png");
+    Texture bg = LoadTexture("./assets/cenario1.jpg");
 
-    while(!WindowShouldClose()) {  
-        posx += 0.2f;
-        if(posx > 1280){
-           posx = -sprite.width; 
-        }
+    // Centraliza o sprite
+    float posx = (screenWidth - sprite.width) / 2.0f;
+    float posy = (1410 - sprite.height) / 2.0f;
 
+    while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(WHITE);
-            DrawText("Primeiros Passos com a RayLib", 50, 100, 30, WHITE);   // Verde
-            DrawTexture(bg, 0, 0, WHITE);
-            DrawTexture(sprite, posx, 820 - sprite.height, WHITE);
+
+        DrawTexture(bg, 0, 0, WHITE);
+        DrawText("Primeiros Passos com a RayLib", 50, 50, 30, BLACK);
+
+        DrawTexture(sprite, posx, posy, WHITE);
+
         EndDrawing();
     }
 
-    CloseWindow();  
-    
+    UnloadTexture(sprite);
+    UnloadTexture(bg);
+    CloseWindow();
+
     return 0;
 }
