@@ -1,88 +1,24 @@
-TARGET = raylibhelloworld# Makefile para o jogo Pong com Raylib
-
+TARGET = raylibhelloworld
 CC = gcc
 
-# Configurações do compilador
+INCLUDE_DIR = include
+LIB_DIR = lib
 
-# Raylib pathsCC = gcc
+CFLAGS = -I $(INCLUDE_DIR)
+LDFLAGS = -L $(LIB_DIR) -lraylib -lgdi32 -lwinmm
 
-INCLUDE_DIR = include  CFLAGS = -Wall -Wextra -std=c99 -O2
+.PHONY: all run clean
 
-LIB_DIR = libINCLUDES = -I./include
-
-LIBS = -L./lib -lraylib -lopengl32 -lgdi32 -lwinmm
-
-# Compiler flags
-
-CFLAGS = -Wall -std=c99 -I$(INCLUDE_DIR)# Diretórios
-
-LDFLAGS = -L$(LIB_DIR) -lraylib -lgdi32 -lwinmmSRC_DIR = src
-
-OUTPUT_DIR = src/output
-
-.PHONY: all run cleanTARGET = $(OUTPUT_DIR)/pong.exe
-
-
-
-all: $(TARGET).exe# Arquivos fonte
-
-SOURCES = $(SRC_DIR)/raylibhelloworld.c
+all: $(TARGET).exe
 
 $(TARGET).exe: $(TARGET).c
+	@echo "Compilando..."
+	@$(CC) -o $(TARGET).exe $(TARGET).c $(CFLAGS) $(LDFLAGS)
+	@echo "Pronto!"
 
-	@echo "Compilando $(TARGET).exe..."# Regra padrão
-
-	@$(CC) $(CFLAGS) $(TARGET).c -o $(TARGET).exe $(LDFLAGS)all: $(TARGET)
-
-	@echo "Compilacao concluida!"
-
-# Compilação do jogo
-
-run: all$(TARGET): $(SOURCES) | $(OUTPUT_DIR)
-
-	@echo "Executando $(TARGET).exe..."	@echo "Compilando o jogo Pong..."
-
-	@./$(TARGET).exe	$(CC) $(CFLAGS) -o $@ $< $(INCLUDES) $(LIBS)
-
-	@echo "Compilação concluída: $(TARGET)"
+run: all
+	@echo "Executando..."
+	@./$(TARGET).exe
 
 clean:
-
-	@echo "Limpando arquivos..."# Criar diretório de saída se não existir
-
-	@rm -f $(TARGET).exe$(OUTPUT_DIR):
-	@echo "Criando diretório de saída..."
-	mkdir -p $(OUTPUT_DIR)
-
-# Executar o jogo
-run: $(TARGET)
-	@echo "Executando o jogo Pong..."
-	./$(TARGET)
-
-# Limpeza dos arquivos compilados
-clean:
-	@echo "Removendo arquivos compilados..."
-	rm -f $(TARGET)
-
-# Limpeza completa (remove o diretório de saída)
-distclean: clean
-	@echo "Removendo diretório de saída..."
-	rmdir $(OUTPUT_DIR) 2>/dev/null || true
-
-# Recompilar tudo do zero
-rebuild: clean all
-
-# Exibir informações de ajuda
-help:
-	@echo "Makefile para o jogo Pong com Raylib"
-	@echo ""
-	@echo "Comandos disponíveis:"
-	@echo "  make all      - Compila o jogo"
-	@echo "  make run      - Executa o jogo (compila se necessário)"
-	@echo "  make clean    - Remove arquivos compilados"
-	@echo "  make distclean - Remove arquivos compilados e diretório de saída"
-	@echo "  make rebuild  - Recompila tudo do zero"
-	@echo "  make help     - Exibe esta ajuda"
-
-# Declarar alvos que não são arquivos
-.PHONY: all run clean distclean rebuild help
+	@rm -f $(TARGET).exe
