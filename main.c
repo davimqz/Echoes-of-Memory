@@ -7,10 +7,12 @@ typedef struct {
     float y;
     float velY;
     int facingRight;
+    int agachado;
     int isJumping;
 } Player;
 
 void moveCharacter(Player *player, float speed) {
+    // Movimento horizontal
     if (IsKeyDown(KEY_A)) {
         player->x -= speed;
         player->facingRight = 0;
@@ -18,6 +20,13 @@ void moveCharacter(Player *player, float speed) {
     if (IsKeyDown(KEY_D)) {
         player->x += speed;
         player->facingRight = 1;
+    }
+
+    // Agachar: segura C para ficar agachado
+    if (IsKeyDown(KEY_C)) {
+        player->agachado = 1;
+    } else {
+        player->agachado = 0; // soltar C volta ao normal
     }
 
     // Limites horizontais
@@ -30,7 +39,7 @@ void updateJump(Player *player, float groundY) {
     const float jumpForce = -12.0f;
 
     // Iniciar pulo
-    if (IsKeyPressed(KEY_SPACE) && !player->isJumping) {
+    if (IsKeyPressed(KEY_SPACE) && !player->isJumping && !player->agachado) {
         player->isJumping = 1;
         player->velY = jumpForce;
     }
@@ -55,12 +64,13 @@ int main() {
 
     InitWindow(screenWidth, screenHeight, "Cenario com pulo animado");
 
-    // Sprites de movimento e pulo
+    // Sprites
     Texture2D spriteLeft = LoadTexture("./assets/characterLeft.png");
     Texture2D spriteRight = LoadTexture("./assets/characterRight.png");
     Texture2D spriteJumpLeft = LoadTexture("./assets/characterJumpLeft.png");
     Texture2D spriteJumpRight = LoadTexture("./assets/characterJumpRight.png");
-
+    Texture2D spriteAgachandoLeft = LoadTexture("./assets/characterAgachandoLeft.png");
+    Texture2D spriteAgachandoRight = LoadTexture("./assets/characterAgachandoRight.png");
     Texture2D bg = LoadTexture("./assets/cenario.png");
 
     float groundY = screenHeight - spriteLeft.height - 30;
@@ -70,6 +80,7 @@ int main() {
         groundY,
         0.0f,
         1,
+        0,
         0
     };
 
@@ -83,12 +94,17 @@ int main() {
         ClearBackground(RAYWHITE);
         DrawTexture(bg, 0, 0, WHITE);
 
-        // Escolhe o sprite de acordo com o estado e direção
+        // Escolher sprite certo
         if (player.isJumping) {
             if (player.facingRight)
                 DrawTexture(spriteJumpRight, player.x, player.y, WHITE);
             else
                 DrawTexture(spriteJumpLeft, player.x, player.y, WHITE);
+        } else if (player.agachado) {
+            if (player.facingRight)
+                DrawTexture(spriteAgachandoRight, player.x, player.y, WHITE);
+            else
+                DrawTexture(spriteAgachandoLeft, player.x, player.y, WHITE);
         } else {
             if (player.facingRight)
                 DrawTexture(spriteRight, player.x, player.y, WHITE);
@@ -96,8 +112,7 @@ int main() {
                 DrawTexture(spriteLeft, player.x, player.y, WHITE);
         }
 
-        DrawText("Use A/D para andar e ESPAÇO para pular", 30, 30, 25, BLACK);
-
+        DrawText("Echoes of Memory Beta 1.0", 30, 30, 25, BLACK);
         EndDrawing();
     }
 
@@ -105,8 +120,10 @@ int main() {
     UnloadTexture(spriteRight);
     UnloadTexture(spriteJumpLeft);
     UnloadTexture(spriteJumpRight);
+    UnloadTexture(spriteAgachandoLeft);
+    UnloadTexture(spriteAgachandoRight);
     UnloadTexture(bg);
-    CloseWindow();
 
+    CloseWindow();
     return 0;
 }
