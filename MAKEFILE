@@ -3,22 +3,28 @@ CC     ?= gcc
 
 INCLUDE_DIR ?= include
 LIB_DIR     ?= lib
+SRC_DIR     ?= src
 
 CFLAGS  = -I$(INCLUDE_DIR)
 LDFLAGS = -L$(LIB_DIR) -lraylib -lgdi32 -lwinmm
+
+# Source files
+SOURCES = $(TARGET).c $(SRC_DIR)/cards.c
 
 .PHONY: all run clean
 
 all: $(TARGET).exe
 
-$(TARGET).exe: $(TARGET).c
-    @echo Compilando $@
-    @$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
-    @echo Pronto!
+$(TARGET).exe: $(SOURCES)
+	@echo Compilando Echoes of Memory...
+	@$(CC) -o $@ $(SOURCES) $(CFLAGS) $(LDFLAGS)
+	@echo ✅ Compilação concluída!
 
 run: all
-    @echo Executando...
-    @./$(TARGET).exe
+	@echo 🎮 Executando Echoes of Memory...
+	@./$(TARGET).exe
 
 clean:
-    @rm -f $(TARGET).exe
+	@echo 🧹 Limpando arquivos...
+	@rm -f $(TARGET).exe
+	@echo ✅ Limpeza concluída!
