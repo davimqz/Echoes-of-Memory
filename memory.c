@@ -103,8 +103,69 @@ int main(void) {
     int matchedPairs = 0;
     int gameWon = 0;
 
+    typedef enum { STATE_MENU=0, STATE_DIFF=1, STATE_PLAY=2 } AppState;
+    AppState state = STATE_MENU;
+    int difficulty = 0; // 0 = Normal, 1 = Difícil
+
     while (!WindowShouldClose()) {
         Vector2 mouse = GetMousePosition();
+
+        // Menu state
+        if (state == STATE_MENU) {
+            BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText("ECHOES OF MEMORY", screenWidth/2 - MeasureText("ECHOES OF MEMORY", 48)/2, 80, 48, DARKBLUE);
+            int cx = screenWidth/2;
+            int y = 220;
+            DrawText("1 - Jogar Agora", cx - MeasureText("1 - Jogar Agora", 32)/2, y, 32, BLACK);
+            y += 60;
+            DrawText("2 - Escolher dificuldade", cx - MeasureText("2 - Escolher dificuldade", 28)/2, y, 28, BLACK);
+            y += 40;
+            DrawText(TextFormat("Dificuldade atual: %s", difficulty==0?"Normal":"Difícil"), cx - MeasureText("Dificuldade atual: Normal", 24)/2, y, 24, DARKGRAY);
+            y += 60;
+            DrawText("4 - Sair", cx - MeasureText("4 - Sair", 28)/2, y, 28, BLACK);
+            DrawText("(Use 1/2/4 para escolher)", 20, screenHeight - 40, 20, DARKGRAY);
+            EndDrawing();
+
+            if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
+                // start game: reset board (reshuffle) and go to play state
+                // build list of available indices
+                int available[7]; for (int i = 0; i < frontCount; i++) available[i] = i;
+                for (int i = frontCount - 1; i > 0; i--) { int j = rand() % (i + 1); int t = available[i]; available[i] = available[j]; available[j] = t; }
+                int sel = 0; int requiredPairs = 8;
+                for (int i = 0; i < frontCount && sel < requiredPairs; i++) { types[sel*2] = available[i]; types[sel*2+1] = available[i]; sel++; }
+                while (sel < requiredPairs) { int pick = rand() % frontCount; types[sel*2] = available[pick]; types[sel*2+1] = available[pick]; sel++; }
+                for (int i = 15; i > 0; i--) { int j = rand() % (i + 1); int t = types[i]; types[i] = types[j]; types[j] = t; }
+                for (int i = 0; i < 16; i++) { cards[i].cardType = types[i]; cards[i].isFlipped = 0; cards[i].isMatched = 0; }
+                first = second = -1; flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                state = STATE_PLAY;
+            }
+            if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
+                state = STATE_DIFF;
+            }
+            if (IsKeyPressed(KEY_FOUR) || IsKeyPressed(KEY_KP_4)) {
+                break;
+            }
+
+            WaitTime(0.01f);
+            continue;
+        }
+
+        if (state == STATE_DIFF) {
+            BeginDrawing();
+            ClearBackground(RAYWHITE);
+            DrawText("Escolha a dificuldade", screenWidth/2 - MeasureText("Escolha a dificuldade", 36)/2, 120, 36, DARKBLUE);
+            DrawText("1 - Normal", screenWidth/2 - MeasureText("1 - Normal", 28)/2, 220, 28, BLACK);
+            DrawText("2 - Difícil", screenWidth/2 - MeasureText("2 - Difícil", 28)/2, 280, 28, BLACK);
+            DrawText("Pressione 1 ou 2 para escolher, ESC para voltar", 20, screenHeight - 40, 20, DARKGRAY);
+            EndDrawing();
+
+            if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) { difficulty = 0; state = STATE_MENU; }
+            if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) { difficulty = 1; state = STATE_MENU; }
+            if (IsKeyPressed(KEY_ESCAPE)) state = STATE_MENU;
+            WaitTime(0.01f);
+            continue;
+        }
 
         if (flipTimer > 0) {
             flipTimer -= GetFrameTime();
@@ -131,8 +192,8 @@ int main(void) {
                         if (first == -1) first = i;
                         else if (second == -1 && i != first) {
                             second = i;
-                            // define tempo para ver as cartas
-                            flipTimer = 0.9f;
+                            // define tempo para ver as cartas dependendo da dificuldade
+                            flipTimer = (difficulty == 0) ? 0.9f : 0.6f;
                         }
                     }
                     break;
