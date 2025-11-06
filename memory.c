@@ -2,19 +2,68 @@
 #include <stdlib.h>
 #include <time.h>
 #include "raylib.h"
+#include "include/cards_list.h"
 
-typedef struct {
-    int cardType;
-    int isFlipped;
-    int isMatched;
-    Rectangle rect;
-} Card;
+// Função para exibir o tabuleiro usando a lista encadeada
+void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[], 
+                     int frontMissing[], const char *frontNames[], 
+                     float startX, float startY, float cardW, float cardH, float pad) {
+    CardNode *current = head;
+    int index = 0;
+    
+    while (current != NULL) {
+        int row = index / 4;
+        int col = index % 4;
+        
+        Rectangle dst;
+        dst.x = startX + col * (cardW + pad);
+        dst.y = startY + row * (cardH + pad);
+        dst.width = cardW;
+        dst.height = cardH;
+        
+        if (current->matched) {
+            // carta encontrada - desenha a frente esmaecida
+            int t = current->id;
+            if (frontMissing[t]) {
+                DrawRectangleRec(dst, Fade(LIGHTGRAY, 0.6f));
+                DrawText(TextFormat("%s", frontNames[t]), 
+                    (int)(dst.x + dst.width/2 - MeasureText(frontNames[t], 14)/2), 
+                    (int)(dst.y + dst.height/2 - 7), 14, DARKBLUE);
+            } else {
+                DrawTexturePro(cardFronts[t], 
+                    (Rectangle){0,0, (float)cardFronts[t].width, (float)cardFronts[t].height}, 
+                    dst, (Vector2){0,0}, 0.0f, Fade(WHITE, 0.6f));
+            }
+        } else if (current->revealed) {
+            int t = current->id;
+            if (frontMissing[t]) {
+                DrawRectangleRec(dst, LIGHTGRAY);
+                DrawText(TextFormat("%s", frontNames[t]), 
+                    (int)(dst.x + dst.width/2 - MeasureText(frontNames[t], 14)/2), 
+                    (int)(dst.y + dst.height/2 - 7), 14, DARKBLUE);
+            } else {
+                DrawTexturePro(cardFronts[t], 
+                    (Rectangle){0,0, (float)cardFronts[t].width, (float)cardFronts[t].height}, 
+                    dst, (Vector2){0,0}, 0.0f, WHITE);
+            }
+        } else {
+            DrawTexturePro(cardBack, 
+                (Rectangle){0,0, (float)cardBack.width, (float)cardBack.height}, 
+                dst, (Vector2){0,0}, 0.0f, WHITE);
+        }
+        
+        DrawRectangleLinesEx(dst, 2, BLACK);
+        
+        current = current->next;
+        index++;
+    }
+}
 
 int main(void) {
     const int screenWidth = 1920;
     const int screenHeight = 1080;
 
-    InitWindow(screenWidth, screenHeight, "Jogo da Memoria - Simple");
+    InitWindow(screenWidth, screenHeight, "Echoes of Memory - Lista Encadeada");
     SetTargetFPS(60);
 
     // Carrega texturas
@@ -49,35 +98,9 @@ int main(void) {
         if (cardFronts[i].width == 0 || cardFronts[i].height == 0) frontMissing[i] = 1;
     }
 
-    // Configura cartas (4x4 -> 16 cartas -> 8 pares)
-    Card cards[16];
-    int types[16];
-    // Seleciona 8 pares a partir das imagens disponíveis sem repetir um mesmo par
-    int requiredPairs = 8;
-    // build list of available indices
-    int available[7];
-    for (int i = 0; i < frontCount; i++) available[i] = i;
-    // shuffle available
-    for (int i = frontCount - 1; i > 0; i--) { int j = rand() % (i + 1); int t = available[i]; available[i] = available[j]; available[j] = t; }
-    int selectedCount = 0;
-    // first take unique types
-    for (int i = 0; i < frontCount && selectedCount < requiredPairs; i++) {
-        types[selectedCount*2] = available[i];
-        types[selectedCount*2 + 1] = available[i];
-        selectedCount++;
-    }
-    // if still need more pairs (happens when frontCount < requiredPairs), fill by reusing available types
-    while (selectedCount < requiredPairs) {
-        int pick = rand() % frontCount;
-        types[selectedCount*2] = available[pick];
-        types[selectedCount*2 + 1] = available[pick];
-        selectedCount++;
-    }
-    // agora embaralha as 16 posições (cada par ocupa duas posições)
-    for (int i = 15; i > 0; i--) {
-        int j = rand() % (i + 1);
-        int tmp = types[i]; types[i] = types[j]; types[j] = tmp;
-    }
+    // Inicializa a lista encadeada de cartas
+    CardNode *cardList = NULL;
+    inicializarCartas(&cardList, 4); // 4x4 board
 
     float cardW = 120.0f;
     float cardH = 160.0f;
@@ -85,20 +108,8 @@ int main(void) {
     float startX = (screenWidth - (4 * cardW + 3 * pad)) / 2.0f;
     float startY = (screenHeight - (4 * cardH + 3 * pad)) / 2.0f;
 
-    for (int r = 0; r < 4; r++) {
-        for (int c = 0; c < 4; c++) {
-            int idx = r * 4 + c;
-            cards[idx].cardType = types[idx];
-            cards[idx].isFlipped = 0;
-            cards[idx].isMatched = 0;
-            cards[idx].rect.x = startX + c * (cardW + pad);
-            cards[idx].rect.y = startY + r * (cardH + pad);
-            cards[idx].rect.width = cardW;
-            cards[idx].rect.height = cardH;
-        }
-    }
-
-    int first = -1, second = -1;
+    CardNode *first = NULL, *second = NULL;
+    int firstIndex = -1, secondIndex = -1;
     float flipTimer = 0.0f;
     int matchedPairs = 0;
     int gameWon = 0;
@@ -143,15 +154,10 @@ int main(void) {
 
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
                 // start game: reset board (reshuffle) and go to play state
-                // build list of available indices
-                int available[7]; for (int i = 0; i < frontCount; i++) available[i] = i;
-                for (int i = frontCount - 1; i > 0; i--) { int j = rand() % (i + 1); int t = available[i]; available[i] = available[j]; available[j] = t; }
-                int sel = 0; int requiredPairs = 8;
-                for (int i = 0; i < frontCount && sel < requiredPairs; i++) { types[sel*2] = available[i]; types[sel*2+1] = available[i]; sel++; }
-                while (sel < requiredPairs) { int pick = rand() % frontCount; types[sel*2] = available[pick]; types[sel*2+1] = available[pick]; sel++; }
-                for (int i = 15; i > 0; i--) { int j = rand() % (i + 1); int t = types[i]; types[i] = types[j]; types[j] = t; }
-                for (int i = 0; i < 16; i++) { cards[i].cardType = types[i]; cards[i].isFlipped = 0; cards[i].isMatched = 0; }
-                first = second = -1; flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                liberarMemoria(&cardList); // libera lista anterior
+                inicializarCartas(&cardList, 4); // cria nova lista 4x4
+                first = second = NULL; firstIndex = secondIndex = -1; 
+                flipTimer = 0; matchedPairs = 0; gameWon = 0;
                 state = STATE_PLAY;
             }
             if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
@@ -193,85 +199,72 @@ int main(void) {
 
         if (flipTimer > 0) {
             flipTimer -= GetFrameTime();
-            if (flipTimer <= 0 && first != -1 && second != -1) {
-                        if (cards[first].cardType != cards[second].cardType) {
-                    cards[first].isFlipped = 0;
-                    cards[second].isFlipped = 0;
-                } else {
-                    cards[first].isMatched = 1;
-                    cards[second].isMatched = 1;
+            if (flipTimer <= 0 && first != NULL && second != NULL) {
+                int isMatch = verificarPar(first, second);
+                if (isMatch) {
                     matchedPairs++;
                     if (matchedPairs >= 8) gameWon = 1;
+                    // Aplica bubble sort após encontrar um par
+                    printf("Par encontrado! Aplicando reordenação CORTEX...\n");
+                    ordenarCartas(&cardList);
                 }
-                first = -1;
-                second = -1;
+                first = second = NULL;
+                firstIndex = secondIndex = -1;
             }
         }
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0) {
-            for (int i = 0; i < 16; i++) {
-                if (CheckCollisionPointRec(mouse, cards[i].rect)) {
-                    if (!cards[i].isFlipped && !cards[i].isMatched) {
-                        cards[i].isFlipped = 1;
-                        if (first == -1) first = i;
-                        else if (second == -1 && i != first) {
-                            second = i;
+            CardNode *current = cardList;
+            int index = 0;
+            
+            while (current != NULL) {
+                int row = index / 4;
+                int col = index % 4;
+                Rectangle cardRect;
+                cardRect.x = startX + col * (cardW + pad);
+                cardRect.y = startY + row * (cardH + pad);
+                cardRect.width = cardW;
+                cardRect.height = cardH;
+                
+                if (CheckCollisionPointRec(mouse, cardRect)) {
+                    CardNode *selectedCard = escolherCarta(cardList, index);
+                    if (selectedCard != NULL) {
+                        if (first == NULL) {
+                            first = selectedCard;
+                            firstIndex = index;
+                        } else if (second == NULL && selectedCard != first) {
+                            second = selectedCard;
+                            secondIndex = index;
                             // define tempo para ver as cartas dependendo da dificuldade
                             flipTimer = (difficulty == 0) ? 0.9f : 0.6f;
                         }
                     }
                     break;
                 }
+                current = current->next;
+                index++;
             }
         }
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-    DrawText("Jogo da Memoria (4x4)", 20, 20, 24, DARKBLUE);
+        DrawText("Echoes of Memory (Lista Encadeada + Bubble Sort)", 20, 20, 24, DARKBLUE);
         DrawText("Clique nas cartas para virar. ESC = Sair, ENTER = Reiniciar.", 20, 50, 16, DARKGRAY);
 
-        for (int i = 0; i < 16; i++) {
-            Rectangle dst = cards[i].rect;
-            if (cards[i].isMatched) {
-                // carta encontrada - desenha a frente esmaecida (ou placeholder se faltar imagem)
-                int t = cards[i].cardType;
-                if (frontMissing[t]) {
-                    DrawRectangleRec(dst, Fade(LIGHTGRAY, 0.6f));
-                    DrawText(TextFormat("%s", frontNames[t]), (int)(dst.x + dst.width/2 - MeasureText(frontNames[t], 14)/2), (int)(dst.y + dst.height/2 - 7), 14, DARKBLUE);
-                } else {
-                    DrawTexturePro(cardFronts[t], (Rectangle){0,0, (float)cardFronts[t].width, (float)cardFronts[t].height}, dst, (Vector2){0,0}, 0.0f, Fade(WHITE, 0.6f));
-                }
-            } else if (cards[i].isFlipped) {
-                int t = cards[i].cardType;
-                if (frontMissing[t]) {
-                    DrawRectangleRec(dst, LIGHTGRAY);
-                    DrawText(TextFormat("%s", frontNames[t]), (int)(dst.x + dst.width/2 - MeasureText(frontNames[t], 14)/2), (int)(dst.y + dst.height/2 - 7), 14, DARKBLUE);
-                } else {
-                    DrawTexturePro(cardFronts[t], (Rectangle){0,0, (float)cardFronts[t].width, (float)cardFronts[t].height}, dst, (Vector2){0,0}, 0.0f, WHITE);
-                }
-            } else {
-                DrawTexturePro(cardBack, (Rectangle){0,0, (float)cardBack.width, (float)cardBack.height}, dst, (Vector2){0,0}, 0.0f, WHITE);
-            }
-            DrawRectangleLinesEx(dst, 2, BLACK);
-        }
+        // Usa a nova função exibirTabuleiro
+        exibirTabuleiro(cardList, cardBack, cardFronts, frontMissing, frontNames, 
+                       startX, startY, cardW, cardH, pad);
 
         if (gameWon) {
-            DrawText("PARABENS! Voce ganhou!", screenWidth/2 - MeasureText("PARABENS! Voce ganhou!", 32)/2, 100, 32, GREEN);
-            DrawText("Pressione ENTER para reiniciar", screenWidth/2 - MeasureText("Pressione ENTER para reiniciar", 20)/2, 140, 20, DARKBLUE);
+            DrawText("PARABENS! Voce restaurou suas memorias!", screenWidth/2 - MeasureText("PARABENS! Voce restaurou suas memorias!", 32)/2, 100, 32, GREEN);
+            DrawText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", screenWidth/2 - MeasureText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", 20)/2, 140, 20, DARKBLUE);
             if (IsKeyPressed(KEY_ENTER)) {
-                // reinicia o jogo: escolhe 8 pares distintos quando possível e embaralha
-                int requiredPairs = 8;
-                int available[7]; for (int i = 0; i < frontCount; i++) available[i] = i;
-                for (int i = frontCount - 1; i > 0; i--) { int j = rand() % (i + 1); int t = available[i]; available[i] = available[j]; available[j] = t; }
-                int sel = 0;
-                for (int i = 0; i < frontCount && sel < requiredPairs; i++) {
-                    types[sel*2] = available[i]; types[sel*2+1] = available[i]; sel++;
-                }
-                while (sel < requiredPairs) { int pick = rand() % frontCount; types[sel*2] = available[pick]; types[sel*2+1] = available[pick]; sel++; }
-                for (int i = 15; i > 0; i--) { int j = rand() % (i + 1); int t = types[i]; types[i] = types[j]; types[j] = t; }
-                for (int i = 0; i < 16; i++) { cards[i].cardType = types[i]; cards[i].isFlipped = 0; cards[i].isMatched = 0; }
-                first = second = -1; flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                // reinicia o jogo: cria nova lista embaralhada
+                liberarMemoria(&cardList);
+                inicializarCartas(&cardList, 4);
+                first = second = NULL; firstIndex = secondIndex = -1; 
+                flipTimer = 0; matchedPairs = 0; gameWon = 0;
             }
         }
 
@@ -281,6 +274,7 @@ int main(void) {
     }
 
     // cleanup
+    liberarMemoria(&cardList);
     UnloadTexture(cardBack);
     for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
     CloseWindow();
