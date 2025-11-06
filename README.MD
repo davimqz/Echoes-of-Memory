@@ -12,17 +12,27 @@ Cada par encontrado restaura um fragmento de sua consciência, enquanto a IA ten
 
 ## 🎮 Como Jogar
 
-1. **Menu Principal**: Pressione ENTER para iniciar
-2. **Introdução Narrativa**: Assista a história ou pressione SPACE para pular
-3. **Gameplay**: 
-   - Clique nas cartas para revelá-las
-   - Encontre pares de símbolos idênticos
-   - A CORTEX reorganizará as cartas após alguns acertos
-   - Complete todos os pares para restaurar sua memória
-4. **Controles**:
-   - Mouse: Selecionar cartas
-   - R: Reiniciar jogo
-   - ESC: Sair (no menu)
+### 🏠 Menu Principal
+- Pressione ENTER para iniciar a jornada
+- ESC para sair
+
+### 📖 Introdução Narrativa
+- Assista a história da CORTEX ou pressione SPACE para pular
+
+### 🚶 Modo Exploração (NOVO!)
+- **Movimentação**: WASD ou setas direcionais
+- **Pulo**: W, ↑ ou SPACE (quando longe da porta)
+- **Agachar**: S, ↓ ou C  
+- **Interação**: Aproxime-se da porta e pressione SPACE para acessar memórias
+- **Menu**: ESC para voltar ao menu principal
+
+### 🧠 Tabuleiro de Memórias
+- Clique nas cartas para revelá-las
+- Encontre pares de símbolos nostálgicos idênticos
+- A CORTEX reorganizará as cartas após alguns acertos
+- Complete todos os pares para restaurar fragmentos de memória
+- **Voltar**: ESC para retornar à exploração
+- **Reiniciar**: R para recomeçar o nível
 
 ## 🛠️ Compilação e Execução
 
@@ -100,20 +110,30 @@ A **CORTEX** possui comportamento adaptativo:
 
 - **Engine**: Raylib (OpenGL)
 - **Tema**: Cyberpunk futurista vs. nostalgia da infância
+- **Assets**: Sprites animados do personagem, background detalhado
 - **Símbolos**: Piões, pipas, tazos, videogames, bolas, bonecas, carrinhos, quebra-cabeças
 - **Efeitos**: Gradientes, animações, distorções durante interferência da CORTEX
+- **Mundo de Exploração**: Cenário 2D com movimentação livre e objetos interativos
 
 ## 📁 Estrutura do Projeto
 
 ```
 Echoes-of-Memory/
-├── main.c              # Loop principal e interface
+├── main.c              # Loop principal, estados do jogo e exploração
 ├── src/
-│   ├── cards.h          # Definições e protótipos
-│   └── cards.c          # Implementação da lógica
+│   ├── cards.h          # Definições e protótipos do sistema de cartas
+│   └── cards.c          # Implementação da lógica de memória
+├── assets/              # Recursos visuais
+│   ├── bg.png          # Background do mundo de exploração
+│   ├── characterLeft.png         # Sprite do jogador (esquerda)
+│   ├── characterRight.png        # Sprite do jogador (direita)
+│   ├── characterJumpLeft.png     # Sprite de pulo (esquerda)
+│   ├── characterJumpRight.png    # Sprite de pulo (direita)
+│   ├── characterAgachandoLeft.png # Sprite agachado (esquerda)
+│   ├── characterAgachandoRight.png # Sprite agachado (direita)
+│   └── cards/           # Sprites das cartas (futuro)
 ├── include/             # Headers do Raylib
 ├── lib/                 # Bibliotecas do Raylib
-├── assets/              # Recursos visuais/sonoros
 ├── Makefile            # Sistema de build
 └── README.md           # Esta documentação
 ```
@@ -123,8 +143,11 @@ Echoes-of-Memory/
 - **Estruturas de Dados**: Lista encadeada, enums, structs
 - **Algoritmos de Ordenação**: Bubble Sort com visualização
 - **Gerenciamento de Memória**: Alocação dinâmica, liberação adequada
-- **Programação de Jogos**: Game loops, estados, input handling
-- **Interface Gráfica**: Renderização 2D, eventos de mouse/teclado
+- **Programação de Jogos**: Game loops, estados, máquinas de estado
+- **Sistema de Input**: Mouse, teclado, diferentes contextos de entrada
+- **Interface Gráfica**: Renderização 2D, sprites animados, efeitos visuais
+- **Física 2D**: Movimento, gravidade, colisões básicas
+- **Arquitetura de Software**: Separação de responsabilidades, modularização
 
 ## 🔧 Dependências
 

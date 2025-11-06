@@ -133,8 +133,15 @@ void exibirTabuleiro(Carta *head, int cols, int rows) {
     const int cardWidth = 80;
     const int cardHeight = 100;
     const int padding = 10;
-    const int startX = 50;
-    const int startY = 100;
+     /* Ajuste se houver offsets de view (definidos em main.c) - usamos variáveis fracas
+         para não depender de headers; main.c define viewOffsetX/Y como globals. Se não
+         existirem, assumimos 0. */
+     int startX = 50;
+     int startY = 100;
+     extern int viewOffsetX;
+     extern int viewOffsetY;
+     startX += viewOffsetX;
+     startY += viewOffsetY;
     
     Carta *atual = head;
     int posicao = 0;
