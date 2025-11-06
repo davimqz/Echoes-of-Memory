@@ -36,10 +36,15 @@ void updateJump(Player *player, float groundY) {
 }
 
 int main() {
-    const int screenWidth = 1368;
-    const int screenHeight = 768;
+     const int screenWidth = 1920;
+     const int screenHeight = 1080;
 
-    InitWindow(screenWidth, screenHeight, "Cenario com pulo e fundo rolando");
+     /* Solicita fullscreen antes de criar a janela e garante que o jogo seja
+         iniciado em fullscreen na resolução desejada. */
+     SetConfigFlags(FLAG_FULLSCREEN_MODE);
+     InitWindow(screenWidth, screenHeight, "Cenario com pulo e fundo rolando");
+     /* Força o toggle para fullscreen (alguns backends precisam do toggle) */
+     ToggleFullscreen();
 
     Texture2D bg = LoadTexture("./assets/bg.png");
     Texture2D spriteLeft = LoadTexture("./assets/characterLeft.png");
@@ -87,7 +92,14 @@ int main() {
         // ---- DESENHO ----
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawTexture(bg, 0, 0, WHITE);
+        /* Desenha o background escalado para preencher 100% da janela/monitor
+           mesmo em fullscreen. Usa DrawTexturePro com src/dst rectangles. */
+        {
+            Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+            Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() };
+            Vector2 origin = { 0.0f, 0.0f };
+            DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+        }
 
         // Escolhe sprite conforme estado
         if (player.isJumping) {
