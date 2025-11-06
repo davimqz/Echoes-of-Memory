@@ -114,17 +114,31 @@ int main(void) {
         if (state == STATE_MENU) {
             BeginDrawing();
             ClearBackground(RAYWHITE);
-            DrawText("ECHOES OF MEMORY", screenWidth/2 - MeasureText("ECHOES OF MEMORY", 48)/2, 80, 48, DARKBLUE);
             int cx = screenWidth/2;
-            int y = 220;
-            DrawText("1 - Jogar Agora", cx - MeasureText("1 - Jogar Agora", 32)/2, y, 32, BLACK);
-            y += 60;
-            DrawText("2 - Escolher dificuldade", cx - MeasureText("2 - Escolher dificuldade", 28)/2, y, 28, BLACK);
-            y += 40;
-            DrawText(TextFormat("Dificuldade atual: %s", difficulty==0?"Normal":"Difícil"), cx - MeasureText("Dificuldade atual: Normal", 24)/2, y, 24, DARKGRAY);
-            y += 60;
-            DrawText("4 - Sair", cx - MeasureText("4 - Sair", 28)/2, y, 28, BLACK);
-            DrawText("(Use 1/2/4 para escolher)", 20, screenHeight - 40, 20, DARKGRAY);
+            // layout fonts and gaps
+            int titleFont = 48;
+            int opt1Font = 32;
+            int opt2Font = 28;
+            int diffFont = 24;
+            int opt4Font = 28;
+            int gapTitle = 40;
+            int gap1 = 30;
+            int gap2 = 20;
+            int gap3 = 40;
+            int totalHeight = titleFont + gapTitle + opt1Font + gap1 + opt2Font + gap2 + diffFont + gap3 + opt4Font;
+            int startY = screenHeight/2 - totalHeight/2;
+            int y = startY;
+            DrawText("ECHOES OF MEMORY", cx - MeasureText("ECHOES OF MEMORY", titleFont)/2, y, titleFont, DARKBLUE);
+            y += titleFont + gapTitle;
+            DrawText("1 - Jogar Agora", cx - MeasureText("1 - Jogar Agora", opt1Font)/2, y, opt1Font, BLACK);
+            y += opt1Font + gap1;
+            DrawText("2 - Escolher dificuldade", cx - MeasureText("2 - Escolher dificuldade", opt2Font)/2, y, opt2Font, BLACK);
+            y += opt2Font + gap2;
+            DrawText(TextFormat("Dificuldade atual: %s", difficulty==0?"Normal":"Difícil"), cx - MeasureText("Dificuldade atual: Normal", diffFont)/2, y, diffFont, DARKGRAY);
+            y += diffFont + gap3;
+            DrawText("4 - Sair", cx - MeasureText("4 - Sair", opt4Font)/2, y, opt4Font, BLACK);
+            // footer centered
+            DrawText("(Use 1/2/4 para escolher)", cx - MeasureText("(Use 1/2/4 para escolher)", 20)/2, screenHeight - 40, 20, DARKGRAY);
             EndDrawing();
 
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
@@ -154,10 +168,20 @@ int main(void) {
         if (state == STATE_DIFF) {
             BeginDrawing();
             ClearBackground(RAYWHITE);
-            DrawText("Escolha a dificuldade", screenWidth/2 - MeasureText("Escolha a dificuldade", 36)/2, 120, 36, DARKBLUE);
-            DrawText("1 - Normal", screenWidth/2 - MeasureText("1 - Normal", 28)/2, 220, 28, BLACK);
-            DrawText("2 - Difícil", screenWidth/2 - MeasureText("2 - Difícil", 28)/2, 280, 28, BLACK);
-            DrawText("Pressione 1 ou 2 para escolher, ESC para voltar", 20, screenHeight - 40, 20, DARKGRAY);
+            int cx = screenWidth/2;
+            int titleFont = 36;
+            int optFont = 28;
+            int gapTitle = 40;
+            int gapOpt = 30;
+            int totalH = titleFont + gapTitle + optFont + gapOpt + optFont;
+            int y0 = screenHeight/2 - totalH/2;
+            int y = y0;
+            DrawText("Escolha a dificuldade", cx - MeasureText("Escolha a dificuldade", titleFont)/2, y, titleFont, DARKBLUE);
+            y += titleFont + gapTitle;
+            DrawText("1 - Normal", cx - MeasureText("1 - Normal", optFont)/2, y, optFont, BLACK);
+            y += optFont + gapOpt;
+            DrawText("2 - Difícil", cx - MeasureText("2 - Difícil", optFont)/2, y, optFont, BLACK);
+            DrawText("Pressione 1 ou 2 para escolher, ESC para voltar", cx - MeasureText("Pressione 1 ou 2 para escolher, ESC para voltar", 20)/2, screenHeight - 40, 20, DARKGRAY);
             EndDrawing();
 
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) { difficulty = 0; state = STATE_MENU; }
