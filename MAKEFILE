@@ -1,2 +1,24 @@
-C:/msys64/mingw64/bin/gcc.exe" main.c -o main.exe -IC:/msys64/mingw64/include -LC:/msys64/mingw64/lib -lraylib -lopengl32 -lgdi32 -lwinmm
-./main
+TARGET = raylibhelloworld
+CC = gcc
+
+INCLUDE_DIR = include
+LIB_DIR = lib
+
+CFLAGS = -I $(INCLUDE_DIR)
+LDFLAGS = -L $(LIB_DIR) -lraylib -lgdi32 -lwinmm
+
+.PHONY: all run clean
+
+all: $(TARGET).exe
+
+$(TARGET).exe: $(TARGET).c
+	@echo "Compilando..."
+	@$(CC) -o $(TARGET).exe $(TARGET).c $(CFLAGS) $(LDFLAGS)
+	@echo "Pronto!"
+
+run: all
+	@echo "Executando..."
+	@./$(TARGET).exe
+
+clean:
+	@rm -f $(TARGET).exe
