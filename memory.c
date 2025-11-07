@@ -274,6 +274,10 @@ int main(void) {
     CardNode *cardList = NULL;
     inicializarCartas(&cardList, 4, frontCount); // 4x4 board
 
+    // lastSeenNodes keeps the last seen (revealed) node pointer for each type
+    CardNode **lastSeenNodes = (CardNode**)malloc(sizeof(CardNode*) * frontCount);
+    for (int i = 0; i < frontCount; i++) lastSeenNodes[i] = NULL;
+
     float cardW = 120.0f;
     float cardH = 160.0f;
     float pad = 20.0f;
@@ -288,7 +292,8 @@ int main(void) {
 
     typedef enum { STATE_MENU=0, STATE_DIFF=1, STATE_PLAY=2 } AppState;
     AppState state = STATE_MENU;
-    int difficulty = 0; // 0 = Normal, 1 = Difícil
+    // difficulty: 0 = Fácil, 1 = Médio, 2 = Difícil
+    int difficulty = 1; // default Médio
 
     while (!WindowShouldClose()) {
         Vector2 mouse = GetMousePosition();
@@ -350,20 +355,22 @@ int main(void) {
             int titleFont = 36;
             int optFont = 28;
             int gapTitle = 40;
-            int gapOpt = 30;
-            int totalH = titleFont + gapTitle + optFont + gapOpt + optFont;
+            int gapOpt = 24;
+            int totalH = titleFont + gapTitle + optFont + gapOpt + optFont + gapOpt + optFont;
             int y0 = screenHeight/2 - totalH/2;
             int y = y0;
             DrawText("Escolha a dificuldade", cx - MeasureText("Escolha a dificuldade", titleFont)/2, y, titleFont, DARKBLUE);
             y += titleFont + gapTitle;
-            DrawText("1 - Normal", cx - MeasureText("1 - Normal", optFont)/2, y, optFont, BLACK);
+            DrawText("1 - Fácil", cx - MeasureText("1 - Fácil", optFont)/2, y, optFont, BLACK);
             y += optFont + gapOpt;
-            DrawText("2 - Difícil", cx - MeasureText("2 - Difícil", optFont)/2, y, optFont, BLACK);
-            DrawText("Pressione 1 ou 2 para escolher, ESC para voltar", cx - MeasureText("Pressione 1 ou 2 para escolher, ESC para voltar", 20)/2, screenHeight - 40, 20, DARKGRAY);
+            DrawText("2 - Médio", cx - MeasureText("2 - Médio", optFont)/2, y, optFont, BLACK);
+            y += optFont + gapOpt;
+            DrawText("3 - Difícil", cx - MeasureText("3 - Difícil", optFont)/2, y, optFont, BLACK);
+            DrawText("Pressione 1, 2 ou 3 para escolher, ESC para voltar", cx - MeasureText("Pressione 1, 2 ou 3 para escolher, ESC para voltar", 20)/2, screenHeight - 40, 20, DARKGRAY);
             EndDrawing();
-
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) { difficulty = 0; state = STATE_MENU; }
             if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) { difficulty = 1; state = STATE_MENU; }
+            if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) { difficulty = 2; state = STATE_MENU; }
             if (IsKeyPressed(KEY_ESCAPE)) state = STATE_MENU;
             WaitTime(0.01f);
             continue;
@@ -379,6 +386,8 @@ int main(void) {
                     // Aplica bubble sort após encontrar um par
                     printf("Par encontrado! Aplicando reordenação CORTEX...\n");
                     ordenarCartas(&cardList);
+                        // Clear remembered pointer for this type
+                        if (first != NULL) lastSeenNodes[first->id] = NULL;
                 }
                 first = second = NULL;
                 firstIndex = secondIndex = -1;
@@ -401,15 +410,32 @@ int main(void) {
                 if (CheckCollisionPointRec(mouse, cardRect)) {
                     CardNode *selectedCard = escolherCarta(cardList, index);
                     if (selectedCard != NULL) {
+                        // Update last seen pointer for this type
+                        CardNode *prevSeen = lastSeenNodes[selectedCard->id];
+
                         if (first == NULL) {
                             first = selectedCard;
                             firstIndex = index;
+
+                            // If easy mode and we previously saw the matching card (and it's not matched), auto-select it
+                            if (difficulty == 0 && prevSeen != NULL && prevSeen != selectedCard && !prevSeen->matched) {
+                                second = prevSeen;
+                                // reveal the second card so player sees it
+                                second->revealed = 1;
+                                // set a short timer to process match automatically
+                                flipTimer = 0.25f;
+                            }
                         } else if (second == NULL && selectedCard != first) {
                             second = selectedCard;
                             secondIndex = index;
                             // define tempo para ver as cartas dependendo da dificuldade
-                            flipTimer = (difficulty == 0) ? 0.9f : 0.6f;
+                            if (difficulty == 0) flipTimer = 1.2f; // easy: more time
+                            else if (difficulty == 1) flipTimer = 0.9f; // medium
+                            else flipTimer = 0.6f; // hard
                         }
+
+                        // record this node as last seen for its type if not matched
+                        if (!selectedCard->matched) lastSeenNodes[selectedCard->id] = selectedCard;
                     }
                     break;
                 }
@@ -447,6 +473,7 @@ int main(void) {
 
     // cleanup
     liberarMemoria(&cardList);
+    free(lastSeenNodes);
     UnloadTexture(cardBack);
     for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
     CloseWindow();
