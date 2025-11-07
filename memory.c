@@ -2,7 +2,179 @@
 #include <stdlib.h>
 #include <time.h>
 #include "raylib.h"
-#include "include/cards_list.h"
+// Implementação local da lista encadeada e funções auxiliares (migradas para memory.c)
+
+typedef struct CardNode {
+    int id;                  // identificador do símbolo (0..N-1)
+    int revealed;            // está temporariamente revelada
+    int matched;             // já foi combinada/encontrada
+    struct CardNode *next;   // ponteiro para o próximo nó
+} CardNode;
+
+// Cria um novo nó de carta
+CardNode* create_card_node(int id) {
+    CardNode *node = (CardNode*)malloc(sizeof(CardNode));
+    if (node == NULL) {
+        printf("Erro: falha na alocação de memória\n");
+        return NULL;
+    }
+    node->id = id;
+    node->revealed = 0;
+    node->matched = 0;
+    node->next = NULL;
+    return node;
+}
+
+// Adiciona uma carta no final da lista
+void append_card(CardNode **head, int id) {
+    CardNode *new_node = create_card_node(id);
+    if (new_node == NULL) return;
+    if (*head == NULL) {
+        *head = new_node;
+        return;
+    }
+    CardNode *current = *head;
+    while (current->next != NULL) current = current->next;
+    current->next = new_node;
+}
+
+// Retorna o nó na posição especificada (0-indexado)
+CardNode* node_at(CardNode *head, int index) {
+    if (index < 0 || head == NULL) return NULL;
+    CardNode *current = head;
+    int count = 0;
+    while (current != NULL && count < index) {
+        current = current->next;
+        count++;
+    }
+    return current;
+}
+
+// Retorna o tamanho da lista
+int list_length(CardNode *head) {
+    int count = 0;
+    CardNode *current = head;
+    while (current != NULL) { count++; current = current->next; }
+    return count;
+}
+
+// Libera toda a memória da lista
+void free_card_list(CardNode **head) {
+    CardNode *current = *head;
+    CardNode *next;
+    while (current != NULL) {
+        next = current->next;
+        free(current);
+        current = next;
+    }
+    *head = NULL;
+}
+
+// Embaralha um array usando Fisher-Yates
+void shuffle_array(int *array, int size) {
+    srand((unsigned)time(NULL));
+    for (int i = size - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int temp = array[i]; array[i] = array[j]; array[j] = temp;
+    }
+}
+
+// Inicializa as cartas do jogo (cria pares embaralhados)
+// availableTypes: número de tipos de frente disponíveis (para indexar texturas)
+void inicializarCartas(CardNode **head, int boardSize, int availableTypes) {
+    if (*head != NULL) free_card_list(head);
+    int totalCards = boardSize * boardSize;
+    int requiredPairs = totalCards / 2;
+
+    int *types = (int*)malloc(totalCards * sizeof(int));
+    int *available = (int*)malloc(availableTypes * sizeof(int));
+    for (int i = 0; i < availableTypes; i++) available[i] = i;
+
+    // shuffle available
+    shuffle_array(available, availableTypes);
+
+    int sel = 0;
+    // first take unique types up to requiredPairs
+    for (int i = 0; i < availableTypes && sel < requiredPairs; i++) {
+        types[sel*2] = available[i];
+        types[sel*2 + 1] = available[i];
+        sel++;
+    }
+    // if still need pairs, fill by reusing random available types
+    while (sel < requiredPairs) {
+        int pick = rand() % availableTypes;
+        types[sel*2] = available[pick];
+        types[sel*2 + 1] = available[pick];
+        sel++;
+    }
+
+    // shuffle the 2*requiredPairs positions
+    shuffle_array(types, totalCards);
+
+    for (int i = 0; i < totalCards; i++) append_card(head, types[i]);
+
+    free(types);
+    free(available);
+}
+
+// Escolhe uma carta na posição especificada
+CardNode* escolherCarta(CardNode *head, int index) {
+    CardNode *card = node_at(head, index);
+    if (card == NULL) return NULL;
+    if (card->matched) return NULL;
+    card->revealed = 1;
+    return card;
+}
+
+// Verifica se duas cartas formam um par
+int verificarPar(CardNode *a, CardNode *b) {
+    if (a == NULL || b == NULL) return 0;
+    if (a == b) return 0;
+    if (a->id == b->id) {
+        a->matched = 1; b->matched = 1; a->revealed = 0; b->revealed = 0; return 1;
+    } else {
+        a->revealed = 0; b->revealed = 0; return 0;
+    }
+}
+
+// Troca dois nós adjacentes na lista encadeada
+void swap_adjacent_nodes(CardNode **head, CardNode *prev, CardNode *a, CardNode *b) {
+    if (a == NULL || b == NULL || a->next != b) return;
+    if (prev == NULL) *head = b; else prev->next = b;
+    a->next = b->next; b->next = a;
+}
+
+// Implementa Bubble Sort na lista encadeada
+void ordenarCartas(CardNode **head) {
+    if (*head == NULL || (*head)->next == NULL) return;
+    int swapped;
+    do {
+        swapped = 0;
+        CardNode *prev = NULL;
+        CardNode *current = *head;
+        while (current != NULL && current->next != NULL) {
+            if (current->id > current->next->id) {
+                CardNode *next = current->next;
+                swap_adjacent_nodes(head, prev, current, next);
+                prev = next;
+                swapped = 1;
+            } else { prev = current; current = current->next; }
+        }
+    } while (swapped);
+}
+
+// IA simples que sugere uma jogada (local)
+void jogadaIA(CardNode *head, int *sugestao_index) {
+    *sugestao_index = -1; CardNode *current = head; int index = 0; int available_positions[64]; int available_count = 0;
+    while (current != NULL) {
+        if (!current->matched && !current->revealed) available_positions[available_count++] = index;
+        current = current->next; index++; }
+    if (available_count == 0) return;
+    srand((unsigned)time(NULL)); *sugestao_index = available_positions[rand() % available_count];
+}
+
+// Wrapper para liberarMemoria
+void liberarMemoria(CardNode **head) { free_card_list(head); }
 
 // Função para exibir o tabuleiro usando a lista encadeada
 void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[], 
@@ -100,7 +272,7 @@ int main(void) {
 
     // Inicializa a lista encadeada de cartas
     CardNode *cardList = NULL;
-    inicializarCartas(&cardList, 4); // 4x4 board
+    inicializarCartas(&cardList, 4, frontCount); // 4x4 board
 
     float cardW = 120.0f;
     float cardH = 160.0f;
@@ -155,7 +327,7 @@ int main(void) {
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
                 // start game: reset board (reshuffle) and go to play state
                 liberarMemoria(&cardList); // libera lista anterior
-                inicializarCartas(&cardList, 4); // cria nova lista 4x4
+                inicializarCartas(&cardList, 4, frontCount); // cria nova lista 4x4
                 first = second = NULL; firstIndex = secondIndex = -1; 
                 flipTimer = 0; matchedPairs = 0; gameWon = 0;
                 state = STATE_PLAY;
@@ -262,7 +434,7 @@ int main(void) {
             if (IsKeyPressed(KEY_ENTER)) {
                 // reinicia o jogo: cria nova lista embaralhada
                 liberarMemoria(&cardList);
-                inicializarCartas(&cardList, 4);
+                inicializarCartas(&cardList, 4, frontCount);
                 first = second = NULL; firstIndex = secondIndex = -1; 
                 flipTimer = 0; matchedPairs = 0; gameWon = 0;
             }
