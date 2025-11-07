@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include "raylib.h"
+#include <string.h>
+#ifdef USE_CURL
+#include <curl/curl.h>
+#endif
 // Implementação local da lista encadeada e funções auxiliares (migradas para memory.c)
 
 typedef struct CardNode {
@@ -163,6 +167,131 @@ void ordenarCartas(CardNode **head) {
     } while (swapped);
 }
 
+// Busca o índice da primeira carta não revelada/não combinada de um tipo específico
+int find_unrevealed_index_of_type(CardNode *head, int type, CardNode *exclude) {
+    CardNode *cur = head; int idx = 0;
+    while (cur != NULL) {
+        if (cur != exclude && !cur->revealed && !cur->matched && cur->id == type) return idx;
+        cur = cur->next; idx++;
+    }
+    return -1;
+}
+
+// Gera uma explicação/sugestão simples baseada no lastSeenNodes e estado atual
+// Retorna o índice sugerido (0..N-1) ou -1 se sem sugestão. Preenche reason buffer.
+int get_ai_suggestion(CardNode *head, CardNode **lastSeenNodes, int frontCount, char *reason, int reasonSize) {
+    // 1) Se houver um tipo que já vimos (lastSeenNodes[type]) e ainda existe outra carta desse tipo não combinada,
+    //    sugira a posição dessa outra carta (provavelmente formará par).
+    for (int t = 0; t < frontCount; t++) {
+        CardNode *seen = lastSeenNodes[t];
+        if (seen != NULL && !seen->matched) {
+            int other = find_unrevealed_index_of_type(head, t, seen);
+            if (other >= 0) {
+                snprintf(reason, reasonSize, "Sugestão: vire a carta na posição %d — já vimos uma carta do tipo '%d' anteriormente e é provável que forme par.", other+1, t);
+                return other;
+            }
+        }
+    }
+
+    // 2) Caso não haja par conhecido, escolha uma posição que ainda não foi revelada/não combinada e que pertença
+    //    a um tipo com maior presença restante (heurística simples). Construímos um contador por tipo.
+    int counts[64] = {0}; // suporta até 64 tipos, mais do que suficiente aqui
+    CardNode *cur = head; int idx = 0; int bestIdx = -1; int bestCount = -1;
+    while (cur != NULL) {
+        if (!cur->matched && !cur->revealed) counts[cur->id]++;
+        cur = cur->next;
+    }
+    cur = head; idx = 0;
+    while (cur != NULL) {
+        if (!cur->matched && !cur->revealed) {
+            int c = counts[cur->id];
+            if (c > bestCount) { bestCount = c; bestIdx = idx; }
+        }
+        cur = cur->next; idx++;
+    }
+    if (bestIdx >= 0) {
+        snprintf(reason, reasonSize, "Sugestão: vire a carta na posição %d — tipo com maior ocorrência restante (%d cópias), boa para explorar.", bestIdx+1, bestCount);
+        return bestIdx;
+    }
+
+    // fallback: escolha aleatória disponível
+    cur = head; idx = 0; int available[128]; int ac = 0;
+    while (cur != NULL) {
+        if (!cur->matched && !cur->revealed) available[ac++] = idx;
+        cur = cur->next; idx++;
+    }
+    if (ac == 0) {
+        snprintf(reason, reasonSize, "Sem cartas disponíveis para sugerir.");
+        return -1;
+    }
+    int pick = rand() % ac;
+    snprintf(reason, reasonSize, "Sugestão aleatória: vire a carta na posição %d para explorar novas informações.", available[pick]+1);
+    return available[pick];
+}
+
+// --- small helper to call GEMINI (or any endpoint) via libcurl ---
+#ifdef USE_CURL
+struct MemoryResponse { char *data; size_t size; };
+static size_t curl_write_cb(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    struct MemoryResponse *mem = (struct MemoryResponse*)userp;
+    char *ptr = (char*)realloc(mem->data, mem->size + realsize + 1);
+    if (ptr == NULL) return 0; // out of memory
+    mem->data = ptr;
+    memcpy(&(mem->data[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->data[mem->size] = 0;
+    return realsize;
+}
+
+// Call GEMINI-like API: send prompt (plain text) in JSON body {"prompt": "..."}
+// Returns a newly-allocated string with the response body (caller must free), or NULL on error.
+char *call_gemini_api(const char *api_key, const char *api_url, const char *prompt, int timeout_seconds) {
+    if (api_key == NULL || api_url == NULL) return NULL;
+    CURL *curl = NULL; CURLcode res;
+    struct curl_slist *headers = NULL;
+    struct MemoryResponse resp; resp.data = NULL; resp.size = 0;
+    char authHeader[512];
+    snprintf(authHeader, sizeof(authHeader), "Authorization: Bearer %s", api_key);
+    curl = curl_easy_init();
+    if (!curl) return NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    headers = curl_slist_append(headers, authHeader);
+    // build JSON body
+    size_t bodyLen = strlen(prompt) + 256;
+    char *body = (char*)malloc(bodyLen);
+    if (!body) { curl_easy_cleanup(curl); curl_slist_free_all(headers); return NULL; }
+    snprintf(body, bodyLen, "{\"prompt\": \"%s\"}", prompt);
+
+    curl_easy_setopt(curl, CURLOPT_URL, api_url);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&resp);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout_seconds);
+    // perform
+    res = curl_easy_perform(curl);
+    free(body);
+    if (res != CURLE_OK) {
+        // cleanup
+        if (resp.data) free(resp.data);
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+        return NULL;
+    }
+    // success: resp.data holds response body
+    char *out = resp.data; // transfer ownership
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    return out;
+}
+#else
+// If compiled without USE_CURL, provide a stub that returns NULL (no network available)
+char *call_gemini_api(const char *api_key, const char *api_url, const char *prompt, int timeout_seconds) {
+    (void)api_key; (void)api_url; (void)prompt; (void)timeout_seconds; return NULL;
+}
+#endif
+
 // IA simples que sugere uma jogada (local)
 void jogadaIA(CardNode *head, int *sugestao_index) {
     *sugestao_index = -1; CardNode *current = head; int index = 0; int available_positions[64]; int available_count = 0;
@@ -278,6 +407,20 @@ int main(void) {
     CardNode **lastSeenNodes = (CardNode**)malloc(sizeof(CardNode*) * frontCount);
     for (int i = 0; i < frontCount; i++) lastSeenNodes[i] = NULL;
 
+    // Help (GEMINI) state: allow one help request per round
+    int helpUsedThisRound = 0;
+    int suggestionIndex = -1;
+    char suggestionText[256] = {0};
+    float suggestionTimer = 0.0f; // how long to show suggestion overlay
+    // Game rules: mistakes / lives
+    const int maxMistakes = 5; // player can err this many times
+    int mistakes = 0;
+    int gameLost = 0; // set when mistakes >= maxMistakes
+    float errorFlash = 0.0f; // visual flash timer when wrong
+    // session-only API key storage (entered in-game; not persisted)
+    char session_api_key[256] = {0};
+    int session_api_key_len = 0;
+
     float cardW = 120.0f;
     float cardH = 160.0f;
     float pad = 20.0f;
@@ -335,6 +478,8 @@ int main(void) {
                 inicializarCartas(&cardList, 4, frontCount); // cria nova lista 4x4
                 first = second = NULL; firstIndex = secondIndex = -1; 
                 flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                // reset help-per-round
+                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
                 state = STATE_PLAY;
             }
             if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
@@ -389,12 +534,23 @@ int main(void) {
                         // Clear remembered pointer for this type
                         if (first != NULL) lastSeenNodes[first->id] = NULL;
                 }
+                else {
+                    // wrong attempt: increment mistakes and flash
+                    mistakes++;
+                    errorFlash = 0.6f;
+                    if (mistakes >= maxMistakes) {
+                        gameLost = 1;
+                        printf("Game Over: demasiados erros (%d)\n", mistakes);
+                    }
+                }
+
                 first = second = NULL;
                 firstIndex = secondIndex = -1;
+                // After resolving a flip pair, we keep helpUsedThisRound as-is (single per entire round)
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0 && !gameLost && !gameWon) {
             CardNode *current = cardList;
             int index = 0;
             
@@ -444,15 +600,158 @@ int main(void) {
             }
         }
 
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
+        // Help request: tecla 'H' (uma vez por round)
+        if (IsKeyPressed(KEY_H) && state == STATE_PLAY && !helpUsedThisRound && !gameWon) {
+            // ask for suggestion and explanation (local fallback)
+            suggestionIndex = get_ai_suggestion(cardList, lastSeenNodes, frontCount, suggestionText, sizeof(suggestionText));
 
-        DrawText("Echoes of Memory (Lista Encadeada + Bubble Sort)", 20, 20, 24, DARKBLUE);
-        DrawText("Clique nas cartas para virar. ESC = Sair, ENTER = Reiniciar.", 20, 50, 16, DARKGRAY);
+            // If GEMINI env variables are provided, ask the remote model for a richer explanation.
+            const char *api_key = getenv("GEMINI_API_KEY");
+            const char *api_url = getenv("GEMINI_API_URL");
+
+            // If there is no global env key, allow entering a session-only key via an in-game modal
+            if ((api_key == NULL || strlen(api_key) == 0) && session_api_key_len == 0) {
+                // open a blocking modal to enter API key for this session (won't be saved)
+                int entering = 1;
+                while (entering && !WindowShouldClose()) {
+                    BeginDrawing();
+                    // dim background
+                    DrawRectangle(0,0, screenWidth, screenHeight, Fade(BLACK, 0.6f));
+                    DrawRectangle(screenWidth/2 - 360, screenHeight/2 - 80, 720, 160, LIGHTGRAY);
+                    DrawRectangleLines(screenWidth/2 - 360, screenHeight/2 - 80, 720, 160, DARKGRAY);
+                    DrawText("Digite a API key do GEMINI para esta sessão (ENTER para enviar, ESC para cancelar):", screenWidth/2 - 340, screenHeight/2 - 60, 16, DARKBLUE);
+                    // show masked input (show last 6 chars for verification)
+                    char masked[300];
+                    if (session_api_key_len == 0) snprintf(masked, sizeof(masked), "(nenhuma)");
+                    else {
+                        int show = 6; if (session_api_key_len < show) show = session_api_key_len;
+                        int start = session_api_key_len - show;
+                        if (start < 0) start = 0;
+                        snprintf(masked, sizeof(masked), "***...%s", &session_api_key[start]);
+                    }
+                    DrawText(masked, screenWidth/2 - 340, screenHeight/2 - 20, 20, BLACK);
+
+                    // capture character input
+                    int key = GetCharPressed();
+                    while (key > 0) {
+                        // support backspace
+                        if ((unsigned)key == 127 || key == 8) {
+                            if (session_api_key_len > 0) { session_api_key[--session_api_key_len] = '\0'; }
+                        } else if (key >= 32 && session_api_key_len < (int)sizeof(session_api_key)-1) {
+                            session_api_key[session_api_key_len++] = (char)key; session_api_key[session_api_key_len] = '\0';
+                        }
+                        key = GetCharPressed();
+                    }
+
+                    if (IsKeyPressed(KEY_ENTER)) { entering = 0; }
+                    if (IsKeyPressed(KEY_ESCAPE)) { session_api_key_len = 0; session_api_key[0] = '\0'; entering = 0; }
+
+                    EndDrawing();
+                    // small sleep to avoid busy loop
+                    WaitTime(0.01f);
+                }
+            }
+
+            // prefer session key if provided
+            const char *use_key = (session_api_key_len>0) ? session_api_key : api_key;
+            if (use_key != NULL && strlen(use_key) > 0 && api_url != NULL) {
+                // Build a compact board summary for the prompt
+                char prompt[2048];
+                char board[1400]; board[0] = '\0';
+                CardNode *c = cardList; int idx = 0;
+                while (c != NULL) {
+                    char line[128];
+                    if (c->matched) snprintf(line, sizeof(line), "%d:MATCHED(%d); ", idx+1, c->id);
+                    else if (c->revealed) snprintf(line, sizeof(line), "%d:REVEALED(%d); ", idx+1, c->id);
+                    else snprintf(line, sizeof(line), "%d:UNKNOWN; ", idx+1);
+                    strncat(board, line, sizeof(board)-strlen(board)-1);
+                    c = c->next; idx++;
+                }
+                snprintf(prompt, sizeof(prompt),
+                    "You are an assistant for a 4x4 memory game. The board state: %s\nI (the game) propose the player consider position %d (1-based). Please explain in one or two short sentences why choosing that card is a good move given the board state. Reply in plain text only.",
+                    board, suggestionIndex+1);
+
+                char *resp = call_gemini_api(use_key, api_url, prompt, 6);
+                if (resp != NULL) {
+                    // use remote explanation (trim to buffer)
+                    strncpy(suggestionText, resp, sizeof(suggestionText)-1);
+                    suggestionText[sizeof(suggestionText)-1] = '\0';
+                    free(resp);
+                }
+            }
+
+            if (suggestionIndex >= 0) suggestionTimer = 4.0f; else suggestionTimer = 2.0f;
+            helpUsedThisRound = 1;
+        }
+
+        BeginDrawing();
+        // Futuristic dark background
+        ClearBackground(BLACK);
+        // subtle vertical gradient
+        DrawRectangleGradientV(0, 0, screenWidth, screenHeight, (Color){6,8,18,255}, (Color){0,0,0,255});
+        // neon grid lines
+        for (int g = 0; g < 12; g++) {
+            int y = (int)(screenHeight * ((float)g / 12.0f));
+            DrawLine(0, y, screenWidth, y, Fade((Color){12,30,50,255}, 0.03f));
+        }
+        // subtle vignette
+        DrawRectangleLinesEx((Rectangle){40,40, screenWidth-80, screenHeight-80}, 4, Fade((Color){20,40,80,255}, 0.06f));
+
+    // Header
+    DrawText("ECHOES OF MEMORY", 36, 18, 32, (Color){80,220,255,255});
+    DrawText("Clique nas cartas para virar. H = Ajuda, ESC = Sair, ENTER = Reiniciar.", 36, 58, 16, Fade((Color){180,220,255,200}, 0.85f));
 
         // Usa a nova função exibirTabuleiro
         exibirTabuleiro(cardList, cardBack, cardFronts, frontMissing, frontNames, 
                        startX, startY, cardW, cardH, pad);
+
+        // Draw suggestion overlay if active
+        if (suggestionTimer > 0.0f) {
+            suggestionTimer -= GetFrameTime();
+            // translucent background
+            DrawRectangle(100, screenHeight - 160, screenWidth - 200, 120, Fade(BLACK, 0.6f));
+            DrawText(suggestionText, 120, screenHeight - 140, 20, RAYWHITE);
+            // highlight suggested card if index valid
+            if (suggestionIndex >= 0) {
+                int row = suggestionIndex / 4;
+                int col = suggestionIndex % 4;
+                Rectangle dst;
+                dst.x = startX + col * (cardW + pad);
+                dst.y = startY + row * (cardH + pad);
+                dst.width = cardW;
+                dst.height = cardH;
+                // neon highlight
+                DrawRectangleLinesEx(dst, 6, (Color){110,255,200,255});
+                DrawRectangleLinesEx(dst, 2, Fade((Color){110,255,200,255}, 0.6f));
+            }
+        }
+
+        // Draw mistakes / lives HUD (top-right)
+        {
+            int hudX = screenWidth - 300;
+            int hudY = 24;
+            DrawText("Vidas", hudX, hudY, 18, (Color){180,240,255,220});
+            for (int i = 0; i < maxMistakes; i++) {
+                int cx = hudX + 80 + i * 30;
+                int cy = hudY + 18;
+                if (i < (maxMistakes - mistakes)) {
+                    // alive
+                    DrawCircle(cx, cy, 10, (Color){40,220,200,255});
+                    DrawCircleLines(cx, cy, 12, (Color){20,120,120,180});
+                } else {
+                    // lost
+                    DrawCircle(cx, cy, 10, Fade((Color){180,40,60,255}, 0.6f));
+                    DrawCircleLines(cx, cy, 12, Fade((Color){120,20,30,255}, 0.6f));
+                }
+            }
+            DrawText(TextFormat("Erros: %d/%d", mistakes, maxMistakes), hudX + 8, hudY + 40, 14, (Color){180,200,255,200});
+        }
+
+        // error flash overlay
+        if (errorFlash > 0.0f) {
+            errorFlash -= GetFrameTime();
+            DrawRectangle(0, 0, screenWidth, screenHeight, Fade((Color){255,40,40,120}, errorFlash*0.8f));
+        }
 
         if (gameWon) {
             DrawText("PARABENS! Voce restaurou suas memorias!", screenWidth/2 - MeasureText("PARABENS! Voce restaurou suas memorias!", 32)/2, 100, 32, GREEN);
@@ -463,6 +762,8 @@ int main(void) {
                 inicializarCartas(&cardList, 4, frontCount);
                 first = second = NULL; firstIndex = secondIndex = -1; 
                 flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                // reset help-per-round
+                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
             }
         }
 
