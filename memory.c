@@ -417,6 +417,8 @@ int main(void) {
     int mistakes = 0;
     int gameLost = 0; // set when mistakes >= maxMistakes
     float errorFlash = 0.0f; // visual flash timer when wrong
+    float lostTimer = 0.0f; // timer to show lost message
+    const float lostShowTime = 2.0f; // seconds to show lost message before returning to menu
     // session-only API key storage (entered in-game; not persisted)
     char session_api_key[256] = {0};
     int session_api_key_len = 0;
@@ -540,6 +542,7 @@ int main(void) {
                     errorFlash = 0.6f;
                     if (mistakes >= maxMistakes) {
                         gameLost = 1;
+                        lostTimer = lostShowTime;
                         printf("Game Over: demasiados erros (%d)\n", mistakes);
                     }
                 }
@@ -753,7 +756,22 @@ int main(void) {
             DrawRectangle(0, 0, screenWidth, screenHeight, Fade((Color){255,40,40,120}, errorFlash*0.8f));
         }
 
-        if (gameWon) {
+        if (gameLost) {
+            // show 'you lost' message for a short time then return to menu
+            if (lostTimer > 0.0f) lostTimer -= GetFrameTime();
+            DrawText("Voce perdeu a sua consciencia!", screenWidth/2 - MeasureText("Voce perdeu a sua consciencia!", 40)/2, 100, 40, RED);
+            DrawText("Voltando ao menu em breve...", screenWidth/2 - MeasureText("Voltando ao menu em breve...", 20)/2, 150, 20, DARKGRAY);
+            if (lostTimer <= 0.0f) {
+                // reset game state and go back to menu
+                mistakes = 0; gameLost = 0; errorFlash = 0.0f;
+                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
+                // reset board
+                liberarMemoria(&cardList);
+                inicializarCartas(&cardList, 4, frontCount);
+                first = second = NULL; firstIndex = secondIndex = -1; flipTimer = 0; matchedPairs = 0; gameWon = 0;
+                state = STATE_MENU;
+            }
+        } else if (gameWon) {
             DrawText("PARABENS! Voce restaurou suas memorias!", screenWidth/2 - MeasureText("PARABENS! Voce restaurou suas memorias!", 32)/2, 100, 32, GREEN);
             DrawText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", screenWidth/2 - MeasureText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", 20)/2, 140, 20, DARKBLUE);
             if (IsKeyPressed(KEY_ENTER)) {
