@@ -3,6 +3,7 @@
 #include <time.h>
 #include "raylib.h"
 #include <string.h>
+#include "memory.h" // Inclui o novo header
 #ifdef USE_CURL
 #include <curl/curl.h>
 #endif
@@ -360,14 +361,17 @@ void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[],
     }
 }
 
-int main(void) {
+// NOVO NOME DA FUNÇÃO: AGORA ELA É CHAMADA PELO main.c
+int RunMemoryGame(int initialDifficulty) {
     const int screenWidth = 1920;
     const int screenHeight = 1080;
 
-    InitWindow(screenWidth, screenHeight, "Echoes of Memory - Lista Encadeada");
-    SetTargetFPS(60);
+    // A janela JÁ DEVE ESTAR ABERTA PELO main.c.
+    // InitWindow(screenWidth, screenHeight, "Echoes of Memory - Lista Encadeada");
+    // SetTargetFPS(60);
 
-    // Carrega texturas
+    // Carrega texturas (Assumimos que o main.c já carregou, mas vamos carregar aqui para garantir
+    // que o módulo seja auto-suficiente caso ele não seja executado na mesma thread do main.c - MELHOR CARREGAR E DESCARREGAR)
     Texture2D cardBack = LoadTexture("./assets/cards/back/card.png");
     Texture2D cardFronts[7];
     // filenames to try (first is preferred, second is ASCII fallback)
@@ -435,93 +439,16 @@ int main(void) {
     int matchedPairs = 0;
     int gameWon = 0;
 
-    typedef enum { STATE_MENU=0, STATE_DIFF=1, STATE_PLAY=2 } AppState;
-    AppState state = STATE_MENU;
-    // difficulty: 0 = Fácil, 1 = Médio, 2 = Difícil
-    int difficulty = 1; // default Médio
+    // Simplificamos o estado para ir direto ao jogo
+    // typedef enum { STATE_MENU=0, STATE_DIFF=1, STATE_PLAY=2 } AppState;
+    // AppState state = STATE_PLAY; 
+    int difficulty = initialDifficulty; // usa o parâmetro
 
     while (!WindowShouldClose()) {
         Vector2 mouse = GetMousePosition();
 
-        // Menu state
-        if (state == STATE_MENU) {
-            BeginDrawing();
-            ClearBackground(RAYWHITE);
-            int cx = screenWidth/2;
-            // layout fonts and gaps
-            int titleFont = 48;
-            int opt1Font = 32;
-            int opt2Font = 28;
-            int diffFont = 24;
-            int opt4Font = 28;
-            int gapTitle = 40;
-            int gap1 = 30;
-            int gap2 = 20;
-            int gap3 = 40;
-            int totalHeight = titleFont + gapTitle + opt1Font + gap1 + opt2Font + gap2 + diffFont + gap3 + opt4Font;
-            int startY = screenHeight/2 - totalHeight/2;
-            int y = startY;
-            DrawText("ECHOES OF MEMORY", cx - MeasureText("ECHOES OF MEMORY", titleFont)/2, y, titleFont, DARKBLUE);
-            y += titleFont + gapTitle;
-            DrawText("1 - Jogar Agora", cx - MeasureText("1 - Jogar Agora", opt1Font)/2, y, opt1Font, BLACK);
-            y += opt1Font + gap1;
-            DrawText("2 - Escolher dificuldade", cx - MeasureText("2 - Escolher dificuldade", opt2Font)/2, y, opt2Font, BLACK);
-            y += opt2Font + gap2;
-            DrawText(TextFormat("Dificuldade atual: %s", difficulty==0?"Normal":"Difícil"), cx - MeasureText("Dificuldade atual: Normal", diffFont)/2, y, diffFont, DARKGRAY);
-            y += diffFont + gap3;
-            DrawText("4 - Sair", cx - MeasureText("4 - Sair", opt4Font)/2, y, opt4Font, BLACK);
-            // footer centered
-            DrawText("(Use 1/2/4 para escolher)", cx - MeasureText("(Use 1/2/4 para escolher)", 20)/2, screenHeight - 40, 20, DARKGRAY);
-            EndDrawing();
-
-            if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
-                // start game: reset board (reshuffle) and go to play state
-                liberarMemoria(&cardList); // libera lista anterior
-                inicializarCartas(&cardList, 4, frontCount); // cria nova lista 4x4
-                first = second = NULL; firstIndex = secondIndex = -1; 
-                flipTimer = 0; matchedPairs = 0; gameWon = 0;
-                // reset help-per-round
-                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
-                state = STATE_PLAY;
-            }
-            if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
-                state = STATE_DIFF;
-            }
-            if (IsKeyPressed(KEY_FOUR) || IsKeyPressed(KEY_KP_4)) {
-                break;
-            }
-
-            WaitTime(0.01f);
-            continue;
-        }
-
-        if (state == STATE_DIFF) {
-            BeginDrawing();
-            ClearBackground(RAYWHITE);
-            int cx = screenWidth/2;
-            int titleFont = 36;
-            int optFont = 28;
-            int gapTitle = 40;
-            int gapOpt = 24;
-            int totalH = titleFont + gapTitle + optFont + gapOpt + optFont + gapOpt + optFont;
-            int y0 = screenHeight/2 - totalH/2;
-            int y = y0;
-            DrawText("Escolha a dificuldade", cx - MeasureText("Escolha a dificuldade", titleFont)/2, y, titleFont, DARKBLUE);
-            y += titleFont + gapTitle;
-            DrawText("1 - Fácil", cx - MeasureText("1 - Fácil", optFont)/2, y, optFont, BLACK);
-            y += optFont + gapOpt;
-            DrawText("2 - Médio", cx - MeasureText("2 - Médio", optFont)/2, y, optFont, BLACK);
-            y += optFont + gapOpt;
-            DrawText("3 - Difícil", cx - MeasureText("3 - Difícil", optFont)/2, y, optFont, BLACK);
-            DrawText("Pressione 1, 2 ou 3 para escolher, ESC para voltar", cx - MeasureText("Pressione 1, 2 ou 3 para escolher, ESC para voltar", 20)/2, screenHeight - 40, 20, DARKGRAY);
-            EndDrawing();
-            if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) { difficulty = 0; state = STATE_MENU; }
-            if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) { difficulty = 1; state = STATE_MENU; }
-            if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) { difficulty = 2; state = STATE_MENU; }
-            if (IsKeyPressed(KEY_ESCAPE)) state = STATE_MENU;
-            WaitTime(0.01f);
-            continue;
-        }
+        // O jogo principal (main.c) deve ter a lógica de menu/dificuldade.
+        // A lógica abaixo é o loop do Jogo da Memória em si.
 
         if (flipTimer > 0) {
             flipTimer -= GetFrameTime();
@@ -604,7 +531,7 @@ int main(void) {
         }
 
         // Help request: tecla 'H' (uma vez por round)
-        if (IsKeyPressed(KEY_H) && state == STATE_PLAY && !helpUsedThisRound && !gameWon) {
+        if (IsKeyPressed(KEY_H) && !helpUsedThisRound && !gameWon) {
             // ask for suggestion and explanation (local fallback)
             suggestionIndex = get_ai_suggestion(cardList, lastSeenNodes, frontCount, suggestionText, sizeof(suggestionText));
 
@@ -760,41 +687,45 @@ int main(void) {
             // show 'you lost' message for a short time then return to menu
             if (lostTimer > 0.0f) lostTimer -= GetFrameTime();
             DrawText("Voce perdeu a sua consciencia!", screenWidth/2 - MeasureText("Voce perdeu a sua consciencia!", 40)/2, 100, 40, RED);
-            DrawText("Voltando ao menu em breve...", screenWidth/2 - MeasureText("Voltando ao menu em breve...", 20)/2, 150, 20, DARKGRAY);
+            DrawText("Voltando ao jogo principal...", screenWidth/2 - MeasureText("Voltando ao jogo principal...", 20)/2, 150, 20, DARKGRAY);
             if (lostTimer <= 0.0f) {
-                // reset game state and go back to menu
-                mistakes = 0; gameLost = 0; errorFlash = 0.0f;
-                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
-                // reset board
+                // cleanup and return 0 (failure)
                 liberarMemoria(&cardList);
-                inicializarCartas(&cardList, 4, frontCount);
-                first = second = NULL; firstIndex = secondIndex = -1; flipTimer = 0; matchedPairs = 0; gameWon = 0;
-                state = STATE_MENU;
+                free(lastSeenNodes);
+                UnloadTexture(cardBack);
+                for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
+                return 0; // RETORNA 0: PERDEU/FALHA
             }
         } else if (gameWon) {
             DrawText("PARABENS! Voce restaurou suas memorias!", screenWidth/2 - MeasureText("PARABENS! Voce restaurou suas memorias!", 32)/2, 100, 32, GREEN);
-            DrawText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", screenWidth/2 - MeasureText("A CORTEX foi derrotada! Pressione ENTER para reiniciar", 20)/2, 140, 20, DARKBLUE);
+            DrawText("A CORTEX foi derrotada! Pressione ENTER para retornar", screenWidth/2 - MeasureText("A CORTEX foi derrotada! Pressione ENTER para retornar", 20)/2, 140, 20, DARKBLUE);
             if (IsKeyPressed(KEY_ENTER)) {
-                // reinicia o jogo: cria nova lista embaralhada
+                // cleanup and return 1 (success)
                 liberarMemoria(&cardList);
-                inicializarCartas(&cardList, 4, frontCount);
-                first = second = NULL; firstIndex = secondIndex = -1; 
-                flipTimer = 0; matchedPairs = 0; gameWon = 0;
-                // reset help-per-round
-                helpUsedThisRound = 0; suggestionIndex = -1; suggestionText[0] = '\0'; suggestionTimer = 0.0f;
+                free(lastSeenNodes);
+                UnloadTexture(cardBack);
+                for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
+                return 1; // RETORNA 1: VENCEU/SUCESSO
             }
         }
-
-        if (IsKeyPressed(KEY_ESCAPE)) break;
+        
+        // Se o jogador pressionar ESC durante o jogo ativo, ele cancela e volta
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            // cleanup and return 0 (canceled)
+            liberarMemoria(&cardList);
+            free(lastSeenNodes);
+            UnloadTexture(cardBack);
+            for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
+            return 0; // RETORNA 0: CANCELADO
+        }
 
         EndDrawing();
     }
 
-    // cleanup
+    // Se a janela fechar, retornar 0
     liberarMemoria(&cardList);
     free(lastSeenNodes);
     UnloadTexture(cardBack);
     for (int i = 0; i < 7; i++) UnloadTexture(cardFronts[i]);
-    CloseWindow();
     return 0;
 }
