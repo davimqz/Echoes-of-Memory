@@ -15,7 +15,7 @@ void updateJump(Player *player, float groundY) {
     const float gravity = 0.6f;
     const float jumpForce = -12.0f;
 
-    // Inicia o pulo (Seu pulo original com KEY_SPACE)
+    // Inicia o pulo 
     if (IsKeyPressed(KEY_SPACE) && !player->isJumping && !player->agachado) {
         player->isJumping = 1;
         player->velY = jumpForce;
@@ -76,11 +76,11 @@ int main() {
 
     SetTargetFPS(60);
 
-    // ajustes da porta
-    float doorYOffset = 470.0f; 
-    float doorSpacing = doorClosed.width * -0.5f; 
-    float totalDoorsWidth = (doorClosed.width * 3) + (doorSpacing * 0); 
-    float startX = GetScreenWidth() / 2.45f - totalDoorsWidth / 2.45f; 
+   //valores de posicionamento das portas
+    float doorYOffset = 430.0f; 
+    float doorSpacing = doorClosed.width * 0.5f;
+    float totalDoorsWidth = (doorClosed.width * 3) + (doorSpacing * 2);
+    float startX = (GetScreenWidth() / 2.0f) - (totalDoorsWidth / 2.0f);
 
     Vector2 doorPositions[3];
     for (int i = 0; i < 3; i++) {
@@ -96,22 +96,25 @@ int main() {
     if (levelUnlocked >= 1) { 
         doorStates[0] = 1; // A primeira porta começa aberta
     }
-    //  Fim ajustes de porta 
-
-
-    // Variável de estado de jogo ---
-    // 0 = Hub (este cenário)
-    // 1 = No Jogo (Tela Preta)
+    
+    // Variável de estado de jogo
     int gameState = 0; 
 
 
     /* ==========================
-        MENU INICIAL (obrigatório)
-       ========================== */
+       MENU INICIAL (obrigatório)
+       Mostra opções e requer que o usuário pressione 1..4
+       1 - Começar jogo
+       2 - Escolher a dificuldade
+       3 - Instruções do jogo
+       4 - Sair
+     ========================== */
+
+
     int menuActive = 1;
     int difficulty = 2; 
     while (menuActive && !WindowShouldClose()) {
-        // ... (Seu código de Menu não foi alterado) ...
+        
         BeginDrawing();
         ClearBackground(BLACK);
         {
@@ -174,15 +177,17 @@ int main() {
                 DrawText("Use A/D ou setas para mover", 120, 220, 24, LIGHTGRAY);
                 DrawText("W, UP ou SPACE para pular", 120, 260, 24, LIGHTGRAY);
                 DrawText("C ou S para agachar", 120, 300, 24, LIGHTGRAY);
-                DrawText("Perto da porta, pressione SPACE para entrar no tabuleiro", 120, 340, 22, LIGHTGRAY);
+                DrawText("Perto da porta, pressione E para entrar no tabuleiro", 120, 340, 22, LIGHTGRAY);
                 DrawText("Pressione qualquer tecla para voltar", 120, GetScreenHeight() - 80, 22, GRAY);
                 EndDrawing();
                 if (GetKeyPressed() != 0) showing = 0;
             }
         } else if (IsKeyPressed(KEY_FOUR) || IsKeyPressed(KEY_KP_4)) {
+            /* Sair do jogo */
             CloseWindow();
             return 0;
         }
+        /* pequeno delay para não travar a CPU */
         if (!menuActive) break;
         WaitTime(0.01f);
     }
@@ -237,20 +242,21 @@ int main() {
 
             // --- Lógica de Interação com a Porta 1 ---
             
-            // --- CORREÇÃO 1: Removido o KEY_SPACE da interação ---
-            // (IsKeyPressed(KEY_SPACE) foi removido)
+            // Usamos tecla "e" para interação
             if (IsKeyPressed(KEY_E)) {
                 
-                // --- CORREÇÃO 2: Hitbox do jogador diminuída ---
-                // A caixa de colisão agora é 1/3 da largura do sprite e centrada.
-                float hitboxWidth = currentPlayerWidth / 3.0f; 
-                float hitboxX = player.x + (currentPlayerWidth - hitboxWidth) / 2.0f; // Centraliza
-
-                // Define a caixa de colisão do jogador (menor e centrada)
+                
+                // Hitbox do jogador: Largura menor (metade) e CENTRALIZADA.
+                float hitboxWidth = currentPlayerWidth / 2.5f;
+                //     (Largura total - Largura da Hitbox) / 2.0f = Offset para centralizar
+                float hitboxX = player.x + (currentPlayerWidth - hitboxWidth) / 2.0f; 
                 Rectangle playerRect = { hitboxX, player.y, hitboxWidth, currentPlayerHeight };
                 
-                // Define a caixa de colisão da Porta 1
-                Rectangle doorRect = { doorPositions[0].x, doorPositions[0].y, (float)doorClosed.width, (float)doorClosed.height };
+                
+                // 2. Hitbox da Porta 1: Também reduzida e centralizada para exigir precisão.
+                float doorHitboxWidth = (float)doorClosed.width * 0.3f; 
+                float doorHitboxX = doorPositions[0].x + ((float)doorClosed.width - doorHitboxWidth) / 2.0f; 
+                Rectangle doorRect = { doorHitboxX, doorPositions[0].y, doorHitboxWidth, (float)doorClosed.height };
 
                 // Verifica se o jogador está colidindo com a porta 1 E se ela está aberta
                 if (CheckCollisionRecs(playerRect, doorRect) && doorStates[0] == 1) {
@@ -276,7 +282,6 @@ int main() {
                 player.agachado = 0;
 
             // ---- PULO ----
-            // (Não precisa do 'isInteracting' porque KEY_SPACE não está mais na lógica de interação)
             updateJump(&player, groundY);
 
         } else if (gameState == 1) { // --- Lógica da Tela Preta ---
@@ -330,6 +335,8 @@ int main() {
                     DrawTexture(spriteLeft, player.x, player.y, WHITE);
             }
 
+           
+           
         } else if (gameState == 1) { // --- Desenha a Tela Preta ---
             
             // A tela já está limpa (ClearBackground(BLACK))
