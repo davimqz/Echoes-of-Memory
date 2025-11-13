@@ -439,6 +439,9 @@ int RunMemoryGame(int initialDifficulty) {
     int matchedPairs = 0;
     int gameWon = 0;
 
+    float previewTimer = 1.0f;
+    int showingPreview = 1;
+
     // Simplificamos o estado para ir direto ao jogo
     // typedef enum { STATE_MENU=0, STATE_DIFF=1, STATE_PLAY=2 } AppState;
     // AppState state = STATE_PLAY; 
@@ -447,21 +450,40 @@ int RunMemoryGame(int initialDifficulty) {
     while (!WindowShouldClose()) {
         Vector2 mouse = GetMousePosition();
 
+        if (showingPreview) {
+            previewTimer -= GetFrameTime();
+            if (previewTimer <= 0.0f) {
+                showingPreview = 0;
+                CardNode *current = cardList;
+                while (current != NULL) {
+                    current->revealed = 0;
+                    current = current->next;
+                }
+            } else {
+                CardNode *current = cardList;
+                while (current != NULL) {
+                    if (!current->matched) {
+                        current->revealed = 1;
+                    }
+                    current = current->next;
+                }
+            }
+        }
+
         // O jogo principal (main.c) deve ter a lógica de menu/dificuldade.
         // A lógica abaixo é o loop do Jogo da Memória em si.
 
         if (flipTimer > 0) {
+            printf("DEBUG: flipTimer atual = %.2f segundos\n", flipTimer);
             flipTimer -= GetFrameTime();
             if (flipTimer <= 0 && first != NULL && second != NULL) {
+                printf("DEBUG: Timer expirou! Verificando par...\n");
                 int isMatch = verificarPar(first, second);
                 if (isMatch) {
                     matchedPairs++;
                     if (matchedPairs >= 8) gameWon = 1;
-                    // Aplica bubble sort após encontrar um par
-                    printf("Par encontrado! Aplicando reordenação CORTEX...\n");
-                    ordenarCartas(&cardList);
-                        // Clear remembered pointer for this type
-                        if (first != NULL) lastSeenNodes[first->id] = NULL;
+                    printf("Par encontrado!\n");
+                    if (first != NULL) lastSeenNodes[first->id] = NULL;
                 }
                 else {
                     // wrong attempt: increment mistakes and flash
@@ -480,7 +502,7 @@ int RunMemoryGame(int initialDifficulty) {
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0 && !gameLost && !gameWon) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0 && !gameLost && !gameWon && !showingPreview) {
             CardNode *current = cardList;
             int index = 0;
             
@@ -508,16 +530,25 @@ int RunMemoryGame(int initialDifficulty) {
                                 second = prevSeen;
                                 // reveal the second card so player sees it
                                 second->revealed = 1;
-                                // set a short timer to process match automatically
-                                flipTimer = 0.25f;
+                                // set a timer to process match automatically
+                                flipTimer = 5.0f;
                             }
                         } else if (second == NULL && selectedCard != first) {
                             second = selectedCard;
                             secondIndex = index;
                             // define tempo para ver as cartas dependendo da dificuldade
-                            if (difficulty == 0) flipTimer = 1.2f; // easy: more time
-                            else if (difficulty == 1) flipTimer = 0.9f; // medium
-                            else flipTimer = 0.6f; // hard
+                            if (difficulty == 0) {
+                                flipTimer = 5.0f; // easy: more time
+                                printf("DEBUG: Dificuldade 0 - flipTimer definido para 5.0f\n");
+                            }
+                            else if (difficulty == 1) {
+                                flipTimer = 5.0f; // medium
+                                printf("DEBUG: Dificuldade 1 - flipTimer definido para 5.0f\n");
+                            }
+                            else {
+                                flipTimer = 5.0f; // hard
+                                printf("DEBUG: Dificuldade 2+ - flipTimer definido para 5.0f\n");
+                            }
                         }
 
                         // record this node as last seen for its type if not matched
@@ -634,6 +665,12 @@ int RunMemoryGame(int initialDifficulty) {
         // Usa a nova função exibirTabuleiro
         exibirTabuleiro(cardList, cardBack, cardFronts, frontMissing, frontNames, 
                        startX, startY, cardW, cardH, pad);
+
+        if (showingPreview) {
+            DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, 0.3f));
+            DrawText("Memorize as cartas!", screenWidth/2 - MeasureText("Memorize as cartas!", 40)/2, 100, 40, WHITE);
+            DrawText(TextFormat("%.1f", previewTimer), screenWidth/2 - MeasureText("0.0", 60)/2, 160, 60, YELLOW);
+        }
 
         // Draw suggestion overlay if active
         if (suggestionTimer > 0.0f) {
