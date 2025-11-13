@@ -101,7 +101,8 @@ int main() {
     
     //Estado de cada porta (0 = fechada, 1 = aberta) e nível desbloqueado
     int doorStates[3] = {0, 0, 0}; 
-    int levelUnlocked = 1; 
+    int levelUnlocked = 1;
+    int fragmentsCollected = 0; // Contador de fragmentos de memória coletados 
     
     //A primeira porta deve aparecer aberta por padrão, se for a fase inicial
     if (levelUnlocked >= 1) { 
@@ -314,6 +315,57 @@ int main() {
 
                         if (gameResult == 1) {
                             doorStates[0] = 0;
+                            fragmentsCollected++;
+                            
+                            // Mostra mensagem de fragmento coletado
+                            int showingFragment = 1;
+                            while (showingFragment && !WindowShouldClose()) {
+                                BeginDrawing();
+                                ClearBackground(BLACK);
+                                
+                                {
+                                    Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                                    Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                                    Vector2 origin = { 0.0f, 0.0f };
+                                    DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                                }
+
+                                for (int i = 0; i < 3; i++) {
+                                    if (doorStates[i] == 1) {
+                                        DrawTexture(doorOpened, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    } else {
+                                        DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    }
+                                }
+
+                                if (player.facingRight)
+                                    DrawTexture(spriteRight, player.x, player.y, WHITE);
+                                else
+                                    DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                                DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.8f));
+                                
+                                int popupW = 700;
+                                int popupH = 250;
+                                int popupX = GetScreenWidth()/2 - popupW/2;
+                                int popupY = GetScreenHeight()/2 - popupH/2;
+                                
+                                DrawRectangle(popupX, popupY, popupW, popupH, (Color){20, 30, 50, 255});
+                                DrawRectangleLines(popupX, popupY, popupW, popupH, (Color){80, 220, 255, 255});
+                                
+                                DrawText("FRAGMENTO DE MEMORIA COLETADO!", popupX + 20, popupY + 30, 28, (Color){80, 220, 255, 255});
+                                DrawText("Nivel 1 - 1/3 Fragmentos Coletados", popupX + 20, popupY + 80, 24, WHITE);
+                                DrawText("Voce restaurou parte de suas memorias...", popupX + 20, popupY + 120, 20, LIGHTGRAY);
+                                
+                                DrawText("Pressione ENTER para continuar", popupX + 20, popupY + 180, 18, YELLOW);
+                                
+                                EndDrawing();
+                                
+                                if (IsKeyPressed(KEY_ENTER)) {
+                                    showingFragment = 0;
+                                }
+                            }
+                            
                             if (levelUnlocked < 2) levelUnlocked = 2;
                             if (levelUnlocked >= 2) doorStates[1] = 1;
                             printf("Porta 1 resolvida! Próxima porta desbloqueada.\n");
@@ -388,6 +440,57 @@ int main() {
 
                         if (gameResult == 1) {
                             doorStates[1] = 0;
+                            fragmentsCollected++;
+                            
+                            // Mostra mensagem de fragmento coletado
+                            int showingFragment = 1;
+                            while (showingFragment && !WindowShouldClose()) {
+                                BeginDrawing();
+                                ClearBackground(BLACK);
+                                
+                                {
+                                    Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                                    Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                                    Vector2 origin = { 0.0f, 0.0f };
+                                    DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                                }
+
+                                for (int i = 0; i < 3; i++) {
+                                    if (doorStates[i] == 1) {
+                                        DrawTexture(doorOpened, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    } else {
+                                        DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    }
+                                }
+
+                                if (player.facingRight)
+                                    DrawTexture(spriteRight, player.x, player.y, WHITE);
+                                else
+                                    DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                                DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.8f));
+                                
+                                int popupW = 700;
+                                int popupH = 250;
+                                int popupX = GetScreenWidth()/2 - popupW/2;
+                                int popupY = GetScreenHeight()/2 - popupH/2;
+                                
+                                DrawRectangle(popupX, popupY, popupW, popupH, (Color){20, 30, 50, 255});
+                                DrawRectangleLines(popupX, popupY, popupW, popupH, (Color){80, 220, 255, 255});
+                                
+                                DrawText("FRAGMENTO DE MEMORIA COLETADO!", popupX + 20, popupY + 30, 28, (Color){80, 220, 255, 255});
+                                DrawText("Nivel 2 - 2/3 Fragmentos Coletados", popupX + 20, popupY + 80, 24, WHITE);
+                                DrawText("Mais memorias estao voltando...", popupX + 20, popupY + 120, 20, LIGHTGRAY);
+                                
+                                DrawText("Pressione ENTER para continuar", popupX + 20, popupY + 180, 18, YELLOW);
+                                
+                                EndDrawing();
+                                
+                                if (IsKeyPressed(KEY_ENTER)) {
+                                    showingFragment = 0;
+                                }
+                            }
+                            
                             if (levelUnlocked < 3) levelUnlocked = 3;
                             if (levelUnlocked >= 3) doorStates[2] = 1;
                             printf("Porta 2 resolvida! Próxima porta desbloqueada.\n");
@@ -462,8 +565,111 @@ int main() {
 
                         if (gameResult == 1) {
                             doorStates[2] = 0;
+                            fragmentsCollected++;
+                            
+                            // Mostra mensagem de fragmento final coletado
+                            int showingFragment = 1;
+                            while (showingFragment && !WindowShouldClose()) {
+                                BeginDrawing();
+                                ClearBackground(BLACK);
+                                
+                                {
+                                    Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                                    Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                                    Vector2 origin = { 0.0f, 0.0f };
+                                    DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                                }
+
+                                for (int i = 0; i < 3; i++) {
+                                    if (doorStates[i] == 1) {
+                                        DrawTexture(doorOpened, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    } else {
+                                        DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    }
+                                }
+
+                                if (player.facingRight)
+                                    DrawTexture(spriteRight, player.x, player.y, WHITE);
+                                else
+                                    DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                                DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.8f));
+                                
+                                int popupW = 700;
+                                int popupH = 250;
+                                int popupX = GetScreenWidth()/2 - popupW/2;
+                                int popupY = GetScreenHeight()/2 - popupH/2;
+                                
+                                DrawRectangle(popupX, popupY, popupW, popupH, (Color){20, 30, 50, 255});
+                                DrawRectangleLines(popupX, popupY, popupW, popupH, (Color){80, 220, 255, 255});
+                                
+                                DrawText("FRAGMENTO DE MEMORIA COLETADO!", popupX + 20, popupY + 30, 28, (Color){80, 220, 255, 255});
+                                DrawText("Nivel 3 - 3/3 Fragmentos Coletados", popupX + 20, popupY + 80, 24, WHITE);
+                                DrawText("Todas as suas memorias foram restauradas!", popupX + 20, popupY + 120, 20, LIGHTGRAY);
+                                
+                                DrawText("Pressione ENTER para continuar", popupX + 20, popupY + 180, 18, YELLOW);
+                                
+                                EndDrawing();
+                                
+                                if (IsKeyPressed(KEY_ENTER)) {
+                                    showingFragment = 0;
+                                }
+                            }
+                            
+                            // Popup final especial quando completar todos os fragmentos
+                            if (fragmentsCollected >= 3) {
+                                int showingFinalPopup = 1;
+                                while (showingFinalPopup && !WindowShouldClose()) {
+                                    BeginDrawing();
+                                    ClearBackground(BLACK);
+                                    
+                                    {
+                                        Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                                        Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                                        Vector2 origin = { 0.0f, 0.0f };
+                                        DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                                    }
+
+                                    for (int i = 0; i < 3; i++) {
+                                        DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                                    }
+
+                                    if (player.facingRight)
+                                        DrawTexture(spriteRight, player.x, player.y, WHITE);
+                                    else
+                                        DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                                    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.9f));
+                                    
+                                    int popupW = 800;
+                                    int popupH = 350;
+                                    int popupX = GetScreenWidth()/2 - popupW/2;
+                                    int popupY = GetScreenHeight()/2 - popupH/2;
+                                    
+                                    DrawRectangle(popupX, popupY, popupW, popupH, (Color){10, 20, 40, 255});
+                                    DrawRectangleLines(popupX, popupY, popupW, popupH, (Color){100, 255, 200, 255});
+                                    DrawRectangleLines(popupX + 5, popupY + 5, popupW - 10, popupH - 10, (Color){80, 200, 160, 255});
+                                    
+                                    DrawText("PARABENS!", popupX + popupW/2 - MeasureText("PARABENS!", 40)/2, popupY + 30, 40, (Color){100, 255, 200, 255});
+                                    DrawText("Voce coletou todos os fragmentos de memoria!", popupX + 30, popupY + 90, 24, WHITE);
+                                    DrawText("3/3 Fragmentos Coletados", popupX + 30, popupY + 130, 28, (Color){255, 215, 0, 255});
+                                    
+                                    DrawText("Voce gostaria de lembrar da sua memoria", popupX + 30, popupY + 180, 22, LIGHTGRAY);
+                                    DrawText("mais marcante da infancia?", popupX + 30, popupY + 210, 22, LIGHTGRAY);
+                                    
+                                    DrawText("ENTER - Sim, quero lembrar", popupX + 50, popupY + 270, 20, (Color){100, 255, 200, 255});
+                                    
+                                    EndDrawing();
+                                    
+                                    if (IsKeyPressed(KEY_ENTER)) {
+                                        showingFinalPopup = 0;
+                                        // Aqui você pode adicionar a lógica para mostrar a memória final
+                                        printf("Final do jogo! Memória mais marcante sendo revelada...\n");
+                                    }
+                                }
+                            }
+                            
                             printf("Porta 3 resolvida! Jogo completado!\n");
-                            // Aqui você pode adicionar lógica para final do jogo se necessário
                         } else {
                             printf("Jogo da Memória Encerrado. Voltando ao Hub.\n");
                         }
