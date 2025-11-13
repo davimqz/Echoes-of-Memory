@@ -240,7 +240,7 @@ int main() {
                 }
             }
             
-            // Lógica de Interação com a Porta 1
+            // Lógica de Interação com as Portas
             if (IsKeyPressed(KEY_E)) {
                 
                 float hitboxWidth = currentPlayerWidth / 3.0f;
@@ -248,10 +248,12 @@ int main() {
                 Rectangle playerRect = { hitboxX, player.y, hitboxWidth, currentPlayerHeight };
                 
                 float doorHitboxWidth = doorWidth * 0.5f;
-                float doorHitboxX = doorPositions[0].x + (doorWidth - doorHitboxWidth) / 2.0f;
-                Rectangle doorRect = { doorHitboxX, doorPositions[0].y, doorHitboxWidth, doorHeight };
+                
+                // Verifica interação com Porta 1
+                float doorHitboxX1 = doorPositions[0].x + (doorWidth - doorHitboxWidth) / 2.0f;
+                Rectangle doorRect1 = { doorHitboxX1, doorPositions[0].y, doorHitboxWidth, doorHeight };
 
-                if (CheckCollisionRecs(playerRect, doorRect) && doorStates[0] == 1) {
+                if (CheckCollisionRecs(playerRect, doorRect1) && doorStates[0] == 1) {
                     
                     int confirmed = 0;
                     int choosing = 1;
@@ -315,6 +317,153 @@ int main() {
                             if (levelUnlocked < 2) levelUnlocked = 2;
                             if (levelUnlocked >= 2) doorStates[1] = 1;
                             printf("Porta 1 resolvida! Próxima porta desbloqueada.\n");
+                        } else {
+                            printf("Jogo da Memória Encerrado. Voltando ao Hub.\n");
+                        }
+                    }
+                }
+                
+                // Verifica interação com Porta 2
+                float doorHitboxX2 = doorPositions[1].x + (doorWidth - doorHitboxWidth) / 2.0f;
+                Rectangle doorRect2 = { doorHitboxX2, doorPositions[1].y, doorHitboxWidth, doorHeight };
+
+                if (CheckCollisionRecs(playerRect, doorRect2) && doorStates[1] == 1) {
+                    
+                    int confirmed = 0;
+                    int choosing = 1;
+                    while (choosing && !WindowShouldClose()) {
+                        BeginDrawing();
+                        ClearBackground(BLACK);
+                        
+                        {
+                            Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                            Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                            Vector2 origin = { 0.0f, 0.0f };
+                            DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                        }
+
+                        for (int i = 0; i < 3; i++) {
+                            if (doorStates[i] == 1) {
+                                DrawTexture(doorOpened, doorPositions[i].x, doorPositions[i].y, WHITE);
+                            } else {
+                                DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                            }
+                        }
+
+                        if (player.facingRight)
+                            DrawTexture(spriteRight, player.x, player.y, WHITE);
+                        else
+                            DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                        DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+                        
+                        int popupW = 600;
+                        int popupH = 200;
+                        int popupX = GetScreenWidth()/2 - popupW/2;
+                        int popupY = GetScreenHeight()/2 - popupH/2;
+                        
+                        DrawRectangle(popupX, popupY, popupW, popupH, WHITE);
+                        DrawRectangleLines(popupX, popupY, popupW, popupH, BLACK);
+                        
+                        DrawText("Voce interagiu com o segundo nivel.", popupX + 20, popupY + 30, 24, BLACK);
+                        DrawText("Voce quer realmente comecar?", popupX + 20, popupY + 60, 24, BLACK);
+                        
+                        DrawText("S - Sim", popupX + 100, popupY + 120, 20, DARKGREEN);
+                        DrawText("N - Nao", popupX + 300, popupY + 120, 20, MAROON);
+                        
+                        EndDrawing();
+                        
+                        if (IsKeyPressed(KEY_S)) {
+                            confirmed = 1;
+                            choosing = 0;
+                        }
+                        if (IsKeyPressed(KEY_N) || IsKeyPressed(KEY_ESCAPE)) {
+                            confirmed = 0;
+                            choosing = 0;
+                        }
+                    }
+                    
+                    if (confirmed) {
+                        int gameResult = RunMemoryGame(difficulty - 1); 
+
+                        if (gameResult == 1) {
+                            doorStates[1] = 0;
+                            if (levelUnlocked < 3) levelUnlocked = 3;
+                            if (levelUnlocked >= 3) doorStates[2] = 1;
+                            printf("Porta 2 resolvida! Próxima porta desbloqueada.\n");
+                        } else {
+                            printf("Jogo da Memória Encerrado. Voltando ao Hub.\n");
+                        }
+                    }
+                }
+                
+                // Verifica interação com Porta 3
+                float doorHitboxX3 = doorPositions[2].x + (doorWidth - doorHitboxWidth) / 2.0f;
+                Rectangle doorRect3 = { doorHitboxX3, doorPositions[2].y, doorHitboxWidth, doorHeight };
+
+                if (CheckCollisionRecs(playerRect, doorRect3) && doorStates[2] == 1) {
+                    
+                    int confirmed = 0;
+                    int choosing = 1;
+                    while (choosing && !WindowShouldClose()) {
+                        BeginDrawing();
+                        ClearBackground(BLACK);
+                        
+                        {
+                            Rectangle srcBg = { 0.0f, 0.0f, (float)bg.width, (float)bg.height };
+                            Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() }; 
+                            Vector2 origin = { 0.0f, 0.0f };
+                            DrawTexturePro(bg, srcBg, dstBg, origin, 0.0f, WHITE);
+                        }
+
+                        for (int i = 0; i < 3; i++) {
+                            if (doorStates[i] == 1) {
+                                DrawTexture(doorOpened, doorPositions[i].x, doorPositions[i].y, WHITE);
+                            } else {
+                                DrawTexture(doorClosed, doorPositions[i].x, doorPositions[i].y, WHITE);
+                            }
+                        }
+
+                        if (player.facingRight)
+                            DrawTexture(spriteRight, player.x, player.y, WHITE);
+                        else
+                            DrawTexture(spriteLeft, player.x, player.y, WHITE);
+
+                        DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+                        
+                        int popupW = 600;
+                        int popupH = 200;
+                        int popupX = GetScreenWidth()/2 - popupW/2;
+                        int popupY = GetScreenHeight()/2 - popupH/2;
+                        
+                        DrawRectangle(popupX, popupY, popupW, popupH, WHITE);
+                        DrawRectangleLines(popupX, popupY, popupW, popupH, BLACK);
+                        
+                        DrawText("Voce interagiu com o terceiro nivel.", popupX + 20, popupY + 30, 24, BLACK);
+                        DrawText("Voce quer realmente comecar?", popupX + 20, popupY + 60, 24, BLACK);
+                        
+                        DrawText("S - Sim", popupX + 100, popupY + 120, 20, DARKGREEN);
+                        DrawText("N - Nao", popupX + 300, popupY + 120, 20, MAROON);
+                        
+                        EndDrawing();
+                        
+                        if (IsKeyPressed(KEY_S)) {
+                            confirmed = 1;
+                            choosing = 0;
+                        }
+                        if (IsKeyPressed(KEY_N) || IsKeyPressed(KEY_ESCAPE)) {
+                            confirmed = 0;
+                            choosing = 0;
+                        }
+                    }
+                    
+                    if (confirmed) {
+                        int gameResult = RunMemoryGame(difficulty - 1); 
+
+                        if (gameResult == 1) {
+                            doorStates[2] = 0;
+                            printf("Porta 3 resolvida! Jogo completado!\n");
+                            // Aqui você pode adicionar lógica para final do jogo se necessário
                         } else {
                             printf("Jogo da Memória Encerrado. Voltando ao Hub.\n");
                         }
