@@ -439,7 +439,7 @@ int RunMemoryGame(int initialDifficulty) {
     int matchedPairs = 0;
     int gameWon = 0;
 
-    float previewTimer = 1.0f;
+    float previewTimer = 5.0f;
     int showingPreview = 1;
 
     // Simplificamos o estado para ir direto ao jogo
@@ -531,23 +531,23 @@ int RunMemoryGame(int initialDifficulty) {
                                 // reveal the second card so player sees it
                                 second->revealed = 1;
                                 // set a timer to process match automatically
-                                flipTimer = 5.0f;
+                                flipTimer = 1.0f;
                             }
                         } else if (second == NULL && selectedCard != first) {
                             second = selectedCard;
                             secondIndex = index;
                             // define tempo para ver as cartas dependendo da dificuldade
                             if (difficulty == 0) {
-                                flipTimer = 5.0f; // easy: more time
-                                printf("DEBUG: Dificuldade 0 - flipTimer definido para 5.0f\n");
+                                flipTimer = 1.0f; // easy: more time
+                                printf("DEBUG: Dificuldade 0 - flipTimer definido para 1.0f\n");
                             }
                             else if (difficulty == 1) {
-                                flipTimer = 5.0f; // medium
-                                printf("DEBUG: Dificuldade 1 - flipTimer definido para 5.0f\n");
+                                flipTimer = 1.0f; // medium
+                                printf("DEBUG: Dificuldade 1 - flipTimer definido para 1.0f\n");
                             }
                             else {
-                                flipTimer = 5.0f; // hard
-                                printf("DEBUG: Dificuldade 2+ - flipTimer definido para 5.0f\n");
+                                flipTimer = 1.0f; // hard
+                                printf("DEBUG: Dificuldade 2+ - flipTimer definido para 1.0f\n");
                             }
                         }
 
