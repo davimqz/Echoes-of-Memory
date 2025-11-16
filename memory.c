@@ -86,40 +86,32 @@ void shuffle_array(int *array, int size) {
 
 // Inicializa as cartas do jogo (cria pares embaralhados)
 // availableTypes: número de tipos de frente disponíveis (para indexar texturas)
-void inicializarCartas(CardNode **head, int boardSize, int availableTypes) {
+void inicializarCartas(CardNode **head, int boardRows, int boardCols, int requiredPairs) {
     if (*head != NULL) free_card_list(head);
-    int totalCards = boardSize * boardSize;
-    int requiredPairs = totalCards / 2;
+    int totalCards = boardRows * boardCols;
+    
+    printf("DEBUG: Nível %dx%d = %d cartas, %d pares\n", boardRows, boardCols, totalCards, requiredPairs);
 
-    int *types = (int*)malloc(totalCards * sizeof(int));
-    int *available = (int*)malloc(availableTypes * sizeof(int));
-    for (int i = 0; i < availableTypes; i++) available[i] = i;
-
-    // shuffle available
-    shuffle_array(available, availableTypes);
-
-    int sel = 0;
-    // first take unique types up to requiredPairs
-    for (int i = 0; i < availableTypes && sel < requiredPairs; i++) {
-        types[sel*2] = available[i];
-        types[sel*2 + 1] = available[i];
-        sel++;
+    // Criar array de cartas usando exatamente os primeiros requiredPairs tipos
+    int *cards = (int*)malloc(totalCards * sizeof(int));
+    int cardIndex = 0;
+    
+    // Criar exatamente requiredPairs pares únicos
+    for (int pair = 0; pair < requiredPairs; pair++) {
+        cards[cardIndex++] = pair; // Primeira carta do par
+        cards[cardIndex++] = pair; // Segunda carta do par
+        printf("DEBUG: Par %d - Tipo %d\n", pair + 1, pair);
     }
-    // if still need pairs, fill by reusing random available types
-    while (sel < requiredPairs) {
-        int pick = rand() % availableTypes;
-        types[sel*2] = available[pick];
-        types[sel*2 + 1] = available[pick];
-        sel++;
+    
+    // Embaralhar todas as cartas
+    shuffle_array(cards, totalCards);
+    
+    // Criar lista encadeada
+    for (int i = 0; i < totalCards; i++) {
+        append_card(head, cards[i]);
     }
-
-    // shuffle the 2*requiredPairs positions
-    shuffle_array(types, totalCards);
-
-    for (int i = 0; i < totalCards; i++) append_card(head, types[i]);
-
-    free(types);
-    free(available);
+    
+    free(cards);
 }
 
 // Escolhe uma carta na posição especificada
@@ -309,13 +301,13 @@ void liberarMemoria(CardNode **head) { free_card_list(head); }
 // Função para exibir o tabuleiro usando a lista encadeada
 void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[], 
                      int frontMissing[], const char *frontNames[], 
-                     float startX, float startY, float cardW, float cardH, float pad) {
+                     float startX, float startY, float cardW, float cardH, float pad, int boardCols) {
     CardNode *current = head;
     int index = 0;
     
     while (current != NULL) {
-        int row = index / 4;
-        int col = index % 4;
+        int row = index / boardCols;
+        int col = index % boardCols;
         
         Rectangle dst;
         dst.x = startX + col * (cardW + pad);
@@ -363,6 +355,8 @@ void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[],
 
 // NOVO NOME DA FUNÇÃO: AGORA ELA É CHAMADA PELO main.c
 int RunMemoryGame(int initialDifficulty) {
+    printf("DEBUG: RunMemoryGame chamado com initialDifficulty = %d\n", initialDifficulty);
+    
     const int screenWidth = 1920;
     const int screenHeight = 1080;
 
@@ -373,9 +367,12 @@ int RunMemoryGame(int initialDifficulty) {
     // Carrega texturas (Assumimos que o main.c já carregou, mas vamos carregar aqui para garantir
     // que o módulo seja auto-suficiente caso ele não seja executado na mesma thread do main.c - MELHOR CARREGAR E DESCARREGAR)
     Texture2D cardBack = LoadTexture("./assets/cards/back/card.png");
-    Texture2D cardFronts[7];
+    Texture2D cardFronts[10];
     // filenames to try (first is preferred, second is ASCII fallback)
-    const char *frontFiles[7][2] = {
+    const char *frontFiles[10][2] = {
+        {"./assets/cards/front/balao.png", NULL},
+        {"./assets/cards/front/carro.png", NULL},
+        {"./assets/cards/front/pirulio.png", NULL},
         {"./assets/cards/front/ball.png", NULL},
         {"./assets/cards/front/bike.png", NULL},
         {"./assets/cards/front/cookie.png", NULL},
@@ -384,9 +381,32 @@ int RunMemoryGame(int initialDifficulty) {
         {"./assets/cards/front/pelucia.png", NULL},
         {"./assets/cards/front/videoGame.png", NULL}
     };
-    const char *frontNames[7] = {"ball","bike","cookie","dado","palhaco","pelucia","videoGame"};
-    int frontCount = 7;
-    int frontMissing[7] = {0};
+    const char *frontNames[10] = {"balao","carro","pirulio","ball","bike","cookie","dado","palhaco","pelucia","videoGame"};
+    int frontCount = 10;
+    int frontMissing[10] = {0};
+    
+    // Configurações por nível de dificuldade
+    int boardRows, boardCols, requiredPairs;
+    printf("DEBUG: initialDifficulty recebido = %d\n", initialDifficulty);
+    
+    switch(initialDifficulty) {
+        case 0: // Nível 1 (Porta 1) - 4x3 = 12 cartas = 6 pares
+            boardRows = 4; boardCols = 3; requiredPairs = 6;
+            printf("DEBUG: Configurando Nível 1 - 4x3\n");
+            break;
+        case 1: // Nível 2 (Porta 2) - 4x4 = 16 cartas = 8 pares
+            boardRows = 4; boardCols = 4; requiredPairs = 8;
+            printf("DEBUG: Configurando Nível 2 - 4x4\n");
+            break;
+        case 2: // Nível 3 (Porta 3) - 5x4 = 20 cartas = 10 pares
+            boardRows = 5; boardCols = 4; requiredPairs = 10;
+            printf("DEBUG: Configurando Nível 3 - 5x4\n");
+            break;
+        default:
+            boardRows = 4; boardCols = 4; requiredPairs = 8;
+            printf("DEBUG: Configurando Nível padrão - 4x4\n");
+            break;
+    }
 
     // Try loading each front; if the preferred name fails and there is a fallback, try it
     for (int i = 0; i < frontCount; i++) {
@@ -403,9 +423,9 @@ int RunMemoryGame(int initialDifficulty) {
         if (cardFronts[i].width == 0 || cardFronts[i].height == 0) frontMissing[i] = 1;
     }
 
-    // Inicializa a lista encadeada de cartas
+    // Inicializa a lista encadeada de cartas baseado no nível
     CardNode *cardList = NULL;
-    inicializarCartas(&cardList, 4, frontCount); // 4x4 board
+    inicializarCartas(&cardList, boardRows, boardCols, requiredPairs);
 
     // lastSeenNodes keeps the last seen (revealed) node pointer for each type
     CardNode **lastSeenNodes = (CardNode**)malloc(sizeof(CardNode*) * frontCount);
@@ -430,8 +450,8 @@ int RunMemoryGame(int initialDifficulty) {
     float cardW = 120.0f;
     float cardH = 160.0f;
     float pad = 20.0f;
-    float startX = (screenWidth - (4 * cardW + 3 * pad)) / 2.0f;
-    float startY = (screenHeight - (4 * cardH + 3 * pad)) / 2.0f;
+    float startX = (screenWidth - (boardCols * cardW + (boardCols-1) * pad)) / 2.0f;
+    float startY = (screenHeight - (boardRows * cardH + (boardRows-1) * pad)) / 2.0f;
 
     CardNode *first = NULL, *second = NULL;
     int firstIndex = -1, secondIndex = -1;
@@ -481,7 +501,7 @@ int RunMemoryGame(int initialDifficulty) {
                 int isMatch = verificarPar(first, second);
                 if (isMatch) {
                     matchedPairs++;
-                    if (matchedPairs >= 8) gameWon = 1;
+                    if (matchedPairs >= requiredPairs) gameWon = 1;
                     printf("Par encontrado!\n");
                     if (first != NULL) lastSeenNodes[first->id] = NULL;
                 }
@@ -507,8 +527,8 @@ int RunMemoryGame(int initialDifficulty) {
             int index = 0;
             
             while (current != NULL) {
-                int row = index / 4;
-                int col = index % 4;
+                int row = index / boardCols;
+                int col = index % boardCols;
                 Rectangle cardRect;
                 cardRect.x = startX + col * (cardW + pad);
                 cardRect.y = startY + row * (cardH + pad);
@@ -664,7 +684,7 @@ int RunMemoryGame(int initialDifficulty) {
 
         // Usa a nova função exibirTabuleiro
         exibirTabuleiro(cardList, cardBack, cardFronts, frontMissing, frontNames, 
-                       startX, startY, cardW, cardH, pad);
+                       startX, startY, cardW, cardH, pad, boardCols);
 
         if (showingPreview) {
             DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, 0.3f));

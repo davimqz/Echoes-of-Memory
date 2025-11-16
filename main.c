@@ -448,7 +448,7 @@ int main() {
                     }
                     
                     if (confirmed) {
-                        int gameResult = RunMemoryGame(difficulty - 1); 
+                        int gameResult = RunMemoryGame(0); // Porta 1: Nível 4x3
 
                         if (gameResult == 1) {
                             doorStates[0] = 0;
@@ -573,7 +573,7 @@ int main() {
                     }
                     
                     if (confirmed) {
-                        int gameResult = RunMemoryGame(difficulty - 1); 
+                        int gameResult = RunMemoryGame(1); // Porta 2: Nível 4x4
 
                         if (gameResult == 1) {
                             doorStates[1] = 0;
@@ -698,7 +698,7 @@ int main() {
                     }
                     
                     if (confirmed) {
-                        int gameResult = RunMemoryGame(difficulty - 1); 
+                        int gameResult = RunMemoryGame(2); // Porta 3: Nível 5x4
 
                         if (gameResult == 1) {
                             doorStates[2] = 0;
