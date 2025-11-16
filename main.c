@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <raylib.h>
 #include "memory.h" // <<< ADICIONADO: Necessário para declarar RunMemoryGame
 
@@ -145,7 +147,99 @@ int main() {
         DrawText("Pressione o numero correspondente para escolher", centerX - MeasureText("Pressione o numero correspondente para escolher", 20) / 2, GetScreenHeight() - 80, 20, GRAY);
         EndDrawing();
         if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
-            menuActive = 0;
+            // Exibir storytelling antes de começar o jogo
+            int storyActive = 1;
+            float storyTimer = 0.0f;
+            int currentLine = 0;
+            
+            const char* storyLines[] = {
+                "No ano 2157, a humanidade perdeu sua capacidade natural de lembrar.",
+                "",
+                "",
+                "Após séculos de dependência das inteligências artificiais,",
+                "toda a memória humana é controlada pela superinteligência CORTEX.",
+                "",
+                "",
+                "Você é um dos últimos humanos com fragmentos de memória própria.",
+                "",
+                "",
+                "Preso dentro do sistema da CORTEX, deve reconectar lembranças",
+                "esquecidas da infância — representadas por pares de cartas",
+                "nostálgicas como piões, pipas, tazos e videogames antigos.",
+                "",
+                "Pressione ENTER para começar sua jornada..."
+            };
+            const int totalLines = 15;
+            const float lineDelay = 1.5f; // Segundos entre cada linha
+            
+            while (storyActive && !WindowShouldClose()) {
+                storyTimer += GetFrameTime();
+                
+                // Avança para a próxima linha baseado no timer
+                if (storyTimer >= lineDelay && currentLine < totalLines) {
+                    currentLine++;
+                    storyTimer = 0.0f;
+                }
+                
+                BeginDrawing();
+                ClearBackground(BLACK);
+                {
+                    Rectangle srcBg = { 0.0f, 0.0f, (float)menuBg.width, (float)menuBg.height };
+                    Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() };
+                    Vector2 origin = { 0.0f, 0.0f };
+                    DrawTexturePro(menuBg, srcBg, dstBg, origin, 0.0f, Fade(WHITE, 0.3f)); // Background mais escuro
+                }
+                
+                // Overlay escuro para melhor legibilidade
+                DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+                
+                int centerX = GetScreenWidth() / 2;
+                int startY = 280;
+                
+                // Título
+                DrawText("ECHOES OF MEMORY", centerX - MeasureText("ECHOES OF MEMORY", 60) / 2, 100, 60, (Color){80,220,255,255});
+                DrawText("____________________", centerX - MeasureText("____________________", 40) / 2, 170, 40, (Color){80,220,255,100});
+                
+                // Exibe as linhas progressivamente
+                for (int i = 0; i <= currentLine && i < totalLines; i++) {
+                    if (strlen(storyLines[i]) > 0) {
+                        float alpha = 1.0f;
+                        if (i == currentLine) {
+                            // Efeito fade-in para a linha atual
+                            alpha = storyTimer / 0.5f;
+                            if (alpha > 1.0f) alpha = 1.0f;
+                        }
+                        
+                        Color textColor = Fade(RAYWHITE, alpha);
+                        int fontSize = 24;
+                        int textWidth = MeasureText(storyLines[i], fontSize);
+                        DrawText(storyLines[i], centerX - textWidth / 2, startY + i * 30, fontSize, textColor);
+                    }
+                }
+                
+                // Mostra a instrução para prosseguir apenas quando todas as linhas foram exibidas
+                if (currentLine >= totalLines - 1) {
+                    float blinkAlpha = (sin(GetTime() * 3.0f) + 1.0f) / 2.0f; // Efeito piscando
+                    DrawText("Pressione ENTER para continuar...", centerX - MeasureText("Pressione ENTER para continuar...", 20) / 2, 
+                             GetScreenHeight() - 80, 20, Fade(YELLOW, blinkAlpha));
+                             
+                    if (IsKeyPressed(KEY_ENTER)) {
+                        storyActive = 0;
+                        menuActive = 0;
+                    }
+                } else {
+                    // Opção para pular o storytelling
+                    DrawText("Pressione SPACE para pular...", centerX - MeasureText("Pressione SPACE para pular...", 16) / 2, 
+                             GetScreenHeight() - 50, 16, Fade(LIGHTGRAY, 0.7f));
+                             
+                    if (IsKeyPressed(KEY_SPACE)) {
+                        storyActive = 0;
+                        menuActive = 0;
+                    }
+                }
+                
+                EndDrawing();
+            }
         } else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
             int showing = 1;
             while (showing && !WindowShouldClose()) {
