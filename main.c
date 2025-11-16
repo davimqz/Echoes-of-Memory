@@ -10,7 +10,6 @@ typedef struct {
     float y;
     float velY;
     int facingRight;
-    int agachado;
     int isJumping;
 } Player;
 
@@ -20,7 +19,7 @@ void updateJump(Player *player, float groundY) {
     const float jumpForce = -12.0f;
 
     // Inicia o pulo 
-    if (IsKeyPressed(KEY_SPACE) && !player->isJumping && !player->agachado) {
+    if (IsKeyPressed(KEY_SPACE) && !player->isJumping) {
         player->isJumping = 1;
         player->velY = jumpForce;
     }
@@ -61,8 +60,6 @@ int main() {
     Texture2D spriteRight = LoadTexture("./assets/characterRight.png");
     Texture2D spriteJumpLeft = LoadTexture("./assets/characterJumpLeft.png");
     Texture2D spriteJumpRight = LoadTexture("./assets/characterJumpRight.png");
-    Texture2D spriteAgachandoLeft = LoadTexture("./assets/characterAgachandoLeft.png");
-    Texture2D spriteAgachandoRight = LoadTexture("./assets/characterAgachandoRight.png");
 
      /*Usa GetScreenHeight() para a altura real (Seu valor original) */
      float groundY = GetScreenHeight() - spriteLeft.height + 200; 
@@ -77,7 +74,6 @@ int main() {
         groundY,                    // Posição no chão
         0.0f,                       // Velocidade vertical
         1,                          // Virado pra direita
-        0,                          // Não agachado
         0                           // Não pulando
     };
 
@@ -254,8 +250,7 @@ int main() {
                 DrawText("Instruções", GetScreenWidth()/2 - MeasureText("Instruções", 40)/2, 140, 40, SKYBLUE);
                 DrawText("Use A/D ou setas para mover", 120, 220, 24, LIGHTGRAY);
                 DrawText("W, UP ou SPACE para pular", 120, 260, 24, LIGHTGRAY);
-                DrawText("C ou S para agachar", 120, 300, 24, LIGHTGRAY);
-                DrawText("Perto da porta, pressione E para entrar no tabuleiro", 120, 340, 22, LIGHTGRAY); // Texto alterado para KEY_E
+                DrawText("Perto da porta, pressione E para entrar no tabuleiro", 120, 300, 22, LIGHTGRAY); // Texto alterado para KEY_E
                 DrawText("Pressione qualquer tecla para voltar", 120, GetScreenHeight() - 80, 22, GRAY);
                 EndDrawing();
                 if (GetKeyPressed() != 0) showing = 0;
@@ -285,7 +280,7 @@ int main() {
                 player.facingRight = 0;
             }
 
-            // ---- Lógica de colisão, pulo, agachar (Intocada) ----
+            // ---- Lógica de colisão e pulo ----
             float currentPlayerWidth = 0;
             float currentPlayerHeight = 0; 
             
@@ -296,14 +291,6 @@ int main() {
                 } else {
                     currentPlayerWidth = spriteJumpLeft.width;
                     currentPlayerHeight = spriteJumpLeft.height;
-                }
-            } else if (player.agachado) {
-                if (player.facingRight) {
-                    currentPlayerWidth = spriteAgachandoRight.width;
-                    currentPlayerHeight = spriteAgachandoRight.height;
-                } else {
-                    currentPlayerWidth = spriteAgachandoLeft.width;
-                    currentPlayerHeight = spriteAgachandoLeft.height;
                 }
             } else {
                 if (player.facingRight) {
@@ -761,12 +748,6 @@ int main() {
                 player.x = GetScreenWidth() - currentPlayerWidth - COLLISION_OFFSET; 
             }
 
-            // AGACHAR
-            if (IsKeyDown(KEY_C))
-                player.agachado = 1;
-            else
-                player.agachado = 0;
-
             // PULO
             updateJump(&player, groundY);
 
@@ -804,11 +785,6 @@ int main() {
                     DrawTexture(spriteJumpRight, player.x, player.y, WHITE);
                 else
                     DrawTexture(spriteJumpLeft, player.x, player.y, WHITE);
-            } else if (player.agachado) {
-                if (player.facingRight)
-                    DrawTexture(spriteAgachandoRight, player.x, player.y, WHITE);
-                else
-                    DrawTexture(spriteAgachandoLeft, player.x, player.y, WHITE);
             } else {
                 if (player.facingRight)
                     DrawTexture(spriteRight, player.x, player.y, WHITE);
@@ -828,9 +804,7 @@ int main() {
     UnloadTexture(spriteRight);
     UnloadTexture(spriteJumpLeft);
     UnloadTexture(spriteJumpRight);
-    UnloadTexture(spriteAgachandoLeft);
-    UnloadTexture(spriteAgachandoRight);
-    UnloadTexture(doorClosed);
+    UnloadTexture(menuBg);
     UnloadTexture(doorOpened);
     CloseWindow();
 
