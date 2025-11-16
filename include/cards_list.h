@@ -19,6 +19,5 @@ void free_card_list(CardNode **head);
 // Funções do jogo da memória
 void inicializarCartas(CardNode **head, int boardSize, int availableTypes);
 CardNode* escolherCarta(CardNode *head, int index);
-void jogadaIA(CardNode *head, int *sugestao_index);
 
 #endif
