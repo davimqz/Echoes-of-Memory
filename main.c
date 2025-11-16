@@ -116,7 +116,7 @@ int main() {
         MENU INICIAL (Intocado)
        ========================== */
     int menuActive = 1;
-    int difficulty = 2; // 1: Fácil, 2: Normal, 3: Difícil
+    int difficulty = 2; // Fixado em Normal
     while (menuActive && !WindowShouldClose()) {
         
         BeginDrawing();
@@ -128,45 +128,25 @@ int main() {
             DrawTexturePro(menuBg, srcBg, dstBg, origin, 0.0f, WHITE);
         }
         int centerX = GetScreenWidth() / 2;
-        int y = 200;
+        int centerY = GetScreenHeight() / 2;
+        
+        // Calcula altura total do menu para centralizar verticalmente
+        int totalMenuHeight = 60 + 120 + 30 + 80 + 30 + 50 + 30; // título + espaços + opções
+        int startY = centerY - totalMenuHeight / 2;
+        
+        int y = startY;
         DrawText("ECHOES OF MEMORY", centerX - MeasureText("ECHOES OF MEMORY", 60) / 2, y, 60, SKYBLUE);
         y += 120;
         DrawText("1 - Começar jogo", centerX - MeasureText("1 - Começar jogo", 30) / 2, y, 30, WHITE);
-        y += 50;
-        DrawText("2 - Escolher a dificuldade", centerX - MeasureText("2 - Escolher a dificuldade", 30) / 2, y, 30, LIGHTGRAY);
-        y += 50;
-        DrawText("3 - Instruções do jogo", centerX - MeasureText("3 - Instruções do jogo", 30) / 2, y, 30, LIGHTGRAY);
-        y += 50;
-        DrawText("4 - Sair", centerX - MeasureText("4 - Sair", 30) / 2, y, 30, LIGHTGRAY);
         y += 80;
-        DrawText(TextFormat("Dificuldade atual: %s", difficulty==1?"Fácil":(difficulty==2?"Normal":"Difícil")), centerX - 150, y, 20, YELLOW);
+        DrawText("2 - Instruções do jogo", centerX - MeasureText("2 - Instruções do jogo", 30) / 2, y, 30, LIGHTGRAY);
+        y += 50;
+        DrawText("3 - Sair", centerX - MeasureText("3 - Sair", 30) / 2, y, 30, LIGHTGRAY);
         DrawText("Pressione o numero correspondente para escolher", centerX - MeasureText("Pressione o numero correspondente para escolher", 20) / 2, GetScreenHeight() - 80, 20, GRAY);
         EndDrawing();
         if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) {
             menuActive = 0;
         } else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) {
-            int choosing = 1;
-            while (choosing && !WindowShouldClose()) {
-                BeginDrawing();
-                ClearBackground(BLACK);
-                {
-                    Rectangle srcBg = { 0.0f, 0.0f, (float)menuBg.width, (float)menuBg.height };
-                    Rectangle dstBg = { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() };
-                    Vector2 origin = { 0.0f, 0.0f };
-                    DrawTexturePro(menuBg, srcBg, dstBg, origin, 0.0f, WHITE);
-                }
-                DrawText("Escolha a dificuldade", GetScreenWidth()/2 - MeasureText("Escolha a dificuldade", 40)/2, 180, 40, SKYBLUE);
-                DrawText("1 - Fácil", GetScreenWidth()/2 - MeasureText("1 - Fácil", 30)/2, 260, 30, LIGHTGRAY);
-                DrawText("2 - Normal", GetScreenWidth()/2 - MeasureText("2 - Normal", 30)/2, 310, 30, LIGHTGRAY);
-                DrawText("3 - Difícil", GetScreenWidth()/2 - MeasureText("3 - Difícil", 30)/2, 360, 30, LIGHTGRAY);
-                DrawText("(Pressione qualquer tecla para confirmar a seleção)", GetScreenWidth()/2 - MeasureText("(Pressione qualquer tecla para confirmar a seleção)", 20)/2, GetScreenHeight() - 80, 20, GRAY);
-                EndDrawing();
-                if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1)) { difficulty = 1; }
-                if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2)) { difficulty = 2; }
-                if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) { difficulty = 3; }
-                if (GetKeyPressed() != 0) choosing = 0;
-            }
-        } else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) {
             int showing = 1;
             while (showing && !WindowShouldClose()) {
                 BeginDrawing();
@@ -186,7 +166,7 @@ int main() {
                 EndDrawing();
                 if (GetKeyPressed() != 0) showing = 0;
             }
-        } else if (IsKeyPressed(KEY_FOUR) || IsKeyPressed(KEY_KP_4)) {
+        } else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) {
             CloseWindow();
             return 0;
         }
