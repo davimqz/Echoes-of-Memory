@@ -51,6 +51,7 @@ int main() {
 
     Texture2D bg = LoadTexture("./assets/bg.png");
     Texture2D menuBg = LoadTexture("./assets/menu_bg.png");
+    Texture2D memoriaTexture = LoadTexture("./assets/memoria.png");
     
     // --- Texturas de Portas (Intocadas) ---
     Texture2D doorClosed = LoadTexture("./assets/door/door_opened.png"); 
@@ -268,7 +269,82 @@ int main() {
     while (!WindowShouldClose()) {
         
         // --- Lógica de Estado de Jogo ---
-        if (gameState == 0) { // Estamos no Hub (Cenário)
+        if (gameState == -1) { // Estado especial para exibir a memória
+            static int showingDescription = 0;
+            
+            BeginDrawing();
+            ClearBackground(BLACK);
+            
+            if (!showingDescription) {
+                // Exibir a imagem da memória
+                int centerX = GetScreenWidth() / 2;
+                int centerY = GetScreenHeight() / 2;
+                
+                // Título
+                DrawText("SUA MEMORIA MAIS MARCANTE", centerX - MeasureText("SUA MEMORIA MAIS MARCANTE", 40) / 2, 50, 40, (Color){100, 255, 200, 255});
+                
+                // Desenhar a imagem da memória no centro
+                if (memoriaTexture.id != 0) {
+                    Rectangle srcMemoria = { 0.0f, 0.0f, (float)memoriaTexture.width, (float)memoriaTexture.height };
+                    
+                    // Calcular tamanho proporcional (máximo 400x300)
+                    float scale = 1.0f;
+                    if (memoriaTexture.width > 400 || memoriaTexture.height > 300) {
+                        float scaleX = 400.0f / memoriaTexture.width;
+                        float scaleY = 300.0f / memoriaTexture.height;
+                        scale = (scaleX < scaleY) ? scaleX : scaleY;
+                    }
+                    
+                    float newWidth = memoriaTexture.width * scale;
+                    float newHeight = memoriaTexture.height * scale;
+                    
+                    Rectangle dstMemoria = { 
+                        centerX - newWidth / 2, 
+                        centerY - newHeight / 2, 
+                        newWidth, 
+                        newHeight 
+                    };
+                    Vector2 origin = { 0.0f, 0.0f };
+                    
+                    DrawTexturePro(memoriaTexture, srcMemoria, dstMemoria, origin, 0.0f, WHITE);
+                }
+                
+                // Instrução
+                DrawText("Pressione qualquer tecla para ver a descrição...", centerX - MeasureText("Pressione qualquer tecla para ver a descrição...", 20) / 2, GetScreenHeight() - 100, 20, YELLOW);
+                
+                if (GetKeyPressed() != 0) {
+                    showingDescription = 1;
+                }
+            } else {
+                // Exibir a descrição da memória
+                int centerX = GetScreenWidth() / 2;
+                
+                DrawText("LEMBRANCA RECUPERADA", centerX - MeasureText("LEMBRANCA RECUPERADA", 40) / 2, 100, 40, (Color){255, 215, 0, 255});
+                
+                // Texto da descrição
+                DrawText("Você se lembra agora... Era verão, e você estava no quintal", centerX - MeasureText("Você se lembra agora... Era verão, e você estava no quintal", 24) / 2, 200, 24, WHITE);
+                DrawText("da sua avó brincando com seus brinquedos favoritos.", centerX - MeasureText("da sua avó brincando com seus brinquedos favoritos.", 24) / 2, 240, 24, WHITE);
+                DrawText("", centerX, 280, 24, WHITE);
+                DrawText("O som das cigarras, o cheiro de terra molhada após a chuva,", centerX - MeasureText("O som das cigarras, o cheiro de terra molhada após a chuva,", 24) / 2, 320, 24, LIGHTGRAY);
+                DrawText("e a sensação de que o tempo poderia parar para sempre.", centerX - MeasureText("e a sensação de que o tempo poderia parar para sempre.", 24) / 2, 360, 24, LIGHTGRAY);
+                DrawText("", centerX, 400, 24, LIGHTGRAY);
+                DrawText("Era a memória mais pura da sua infância.", centerX - MeasureText("Era a memória mais pura da sua infância.", 28) / 2, 440, 28, (Color){100, 255, 200, 255});
+                DrawText("", centerX, 480, 24, WHITE);
+                DrawText("Agora você se lembrou de quem realmente é.", centerX - MeasureText("Agora você se lembrou de quem realmente é.", 24) / 2, 520, 24, WHITE);
+                
+                // Instrução final
+                DrawText("Pressione qualquer tecla para voltar ao menu principal...", centerX - MeasureText("Pressione qualquer tecla para voltar ao menu principal...", 20) / 2, GetScreenHeight() - 80, 20, YELLOW);
+                
+                if (GetKeyPressed() != 0) {
+                    // Voltar ao menu principal
+                    CloseWindow();
+                    return 0;
+                }
+            }
+            
+            EndDrawing();
+            
+        } else if (gameState == 0) { // Estamos no Hub (Cenário)
         
             // ---- MOVIMENTO HORIZONTAL ----
             if (IsKeyDown(KEY_D)) {
@@ -724,8 +800,8 @@ int main() {
                                     
                                     if (IsKeyPressed(KEY_ENTER)) {
                                         showingFinalPopup = 0;
-                                        // Aqui você pode adicionar a lógica para mostrar a memória final
-                                        printf("Final do jogo! Memória mais marcante sendo revelada...\n");
+                                        gameState = -1; // Estado especial para memória
+                                        printf("Exibindo a memória mais marcante...\n");
                                     }
                                 }
                             }
@@ -805,6 +881,8 @@ int main() {
     UnloadTexture(spriteJumpLeft);
     UnloadTexture(spriteJumpRight);
     UnloadTexture(menuBg);
+    UnloadTexture(memoriaTexture);
+    UnloadTexture(memoriaTexture);
     UnloadTexture(doorOpened);
     CloseWindow();
 
