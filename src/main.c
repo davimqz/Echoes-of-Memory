@@ -35,12 +35,12 @@ void updateJump(Player *player, float groundY) {
 }
 
 int main() {
-     const int screenWidth = 1920;
-     const int screenHeight = 1080;
+    const int screenWidth = 1920;
+    const int screenHeight = 1080;
 
-     SetConfigFlags(FLAG_FULLSCREEN_MODE);
-     InitWindow(screenWidth, screenHeight, "Cenario com pulo e fundo rolando");
-     ToggleFullscreen();
+    SetConfigFlags(FLAG_FULLSCREEN_MODE);
+    InitWindow(screenWidth, screenHeight, "Cenario com pulo e fundo rolando");
+    ToggleFullscreen();
 
     Texture2D bg = LoadTexture("./assets/bg.png");
     Texture2D menuBg = LoadTexture("./assets/menu_bg.png");
@@ -87,7 +87,7 @@ int main() {
     int levelUnlocked = 1;
     int fragmentsCollected = 0;
     
-    if (levelUnlocked >= 1) { 
+    if (levelUnlocked >= 1) {
         doorStates[0] = 1;
     }
     
@@ -218,10 +218,19 @@ int main() {
                     Vector2 origin = { 0.0f, 0.0f };
                     DrawTexturePro(menuBg, srcBg, dstBg, origin, 0.0f, WHITE);
                 }
-                DrawText("Instruções", GetScreenWidth()/2 - MeasureText("Instruções", 40)/2, 140, 40, SKYBLUE);
-                DrawText("Use A/D ou setas para mover", 120, 220, 24, LIGHTGRAY);
-                DrawText("W, UP ou SPACE para pular", 120, 260, 24, LIGHTGRAY);
-                DrawText("Perto da porta, pressione E para entrar no tabuleiro", 120, 300, 22, LIGHTGRAY);
+                DrawText("Instrucoes", GetScreenWidth()/2 - MeasureText("Instrucoes", 40)/2, 140, 40, SKYBLUE);
+                DrawText("EXPLORACAO:", 120, 200, 28, YELLOW);
+                DrawText("- Use A/D ou setas para mover", 120, 240, 24, LIGHTGRAY);
+                DrawText("- W, UP ou SPACE para pular", 120, 280, 24, LIGHTGRAY);
+                DrawText("- Perto da porta, pressione SPACE para entrar", 120, 320, 22, LIGHTGRAY);
+                
+                DrawText("JOGO DA MEMORIA:", 120, 380, 28, YELLOW);
+                DrawText("- Clique nas cartas para revela-las", 120, 420, 24, LIGHTGRAY);
+                DrawText("- Encontre pares de simbolos identicos", 120, 460, 24, LIGHTGRAY);
+                DrawText("- Pressione H para DICAS (maximo 3 por jogo)", 120, 500, 24, SKYBLUE);
+                DrawText("- ESC para voltar a exploracao", 120, 540, 24, LIGHTGRAY);
+                
+                DrawText("CUIDADO: A CORTEX interferira quando acertar muito!", 120, 600, 22, RED);
                 DrawText("Pressione qualquer tecla para voltar", 120, GetScreenHeight() - 80, 22, GRAY);
                 EndDrawing();
                 if (GetKeyPressed() != 0) showing = 0;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 #include "raylib.h"
 #include <string.h>
 #include "memory.h"
@@ -27,18 +28,24 @@ CardNode* create_card_node(int id) {
 
 void append_card(CardNode **head, int id) {
     CardNode *new_node = create_card_node(id);
-    if (new_node == NULL) return;
+    if (new_node == NULL) {
+        return;
+    }
     if (*head == NULL) {
         *head = new_node;
         return;
     }
     CardNode *current = *head;
-    while (current->next != NULL) current = current->next;
+    while (current->next != NULL) {
+        current = current->next;
+    }
     current->next = new_node;
 }
 
 CardNode* node_at(CardNode *head, int index) {
-    if (index < 0 || head == NULL) return NULL;
+    if (index < 0 || head == NULL) {
+        return NULL;
+    }
     CardNode *current = head;
     int count = 0;
     while (current != NULL && count < index) {
@@ -51,7 +58,10 @@ CardNode* node_at(CardNode *head, int index) {
 int list_length(CardNode *head) {
     int count = 0;
     CardNode *current = head;
-    while (current != NULL) { count++; current = current->next; }
+    while (current != NULL) {
+        count++;
+        current = current->next;
+    }
     return count;
 }
 
@@ -70,12 +80,16 @@ void shuffle_array(int *array, int size) {
     srand((unsigned)time(NULL));
     for (int i = size - 1; i > 0; i--) {
         int j = rand() % (i + 1);
-        int temp = array[i]; array[i] = array[j]; array[j] = temp;
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
     }
 }
 
 void inicializarCartas(CardNode **head, int boardRows, int boardCols, int requiredPairs) {
-    if (*head != NULL) free_card_list(head);
+    if (*head != NULL) {
+        free_card_list(head);
+    }
     int totalCards = boardRows * boardCols;
     
     printf("DEBUG: Nível %dx%d = %d cartas, %d pares\n", boardRows, boardCols, totalCards, requiredPairs);
@@ -100,30 +114,53 @@ void inicializarCartas(CardNode **head, int boardRows, int boardCols, int requir
 
 CardNode* escolherCarta(CardNode *head, int index) {
     CardNode *card = node_at(head, index);
-    if (card == NULL) return NULL;
-    if (card->matched) return NULL;
+    if (card == NULL) {
+        return NULL;
+    }
+    if (card->matched) {
+        return NULL;
+    }
     card->revealed = 1;
     return card;
 }
 
 int verificarPar(CardNode *a, CardNode *b) {
-    if (a == NULL || b == NULL) return 0;
-    if (a == b) return 0;
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+    if (a == b) {
+        return 0;
+    }
     if (a->id == b->id) {
-        a->matched = 1; b->matched = 1; a->revealed = 0; b->revealed = 0; return 1;
+        a->matched = 1;
+        b->matched = 1;
+        a->revealed = 0;
+        b->revealed = 0;
+        return 1;
     } else {
-        a->revealed = 0; b->revealed = 0; return 0;
+        a->revealed = 0;
+        b->revealed = 0;
+        return 0;
     }
 }
 
 void swap_adjacent_nodes(CardNode **head, CardNode *prev, CardNode *a, CardNode *b) {
-    if (a == NULL || b == NULL || a->next != b) return;
-    if (prev == NULL) *head = b; else prev->next = b;
-    a->next = b->next; b->next = a;
+    if (a == NULL || b == NULL || a->next != b) {
+        return;
+    }
+    if (prev == NULL) {
+        *head = b;
+    } else {
+        prev->next = b;
+    }
+    a->next = b->next;
+    b->next = a;
 }
 
 void ordenarCartas(CardNode **head) {
-    if (*head == NULL || (*head)->next == NULL) return;
+    if (*head == NULL || (*head)->next == NULL) {
+        return;
+    }
     int swapped;
     do {
         swapped = 0;
@@ -135,16 +172,141 @@ void ordenarCartas(CardNode **head) {
                 swap_adjacent_nodes(head, prev, current, next);
                 prev = next;
                 swapped = 1;
-            } else { prev = current; current = current->next; }
+            } else {
+                prev = current;
+                current = current->next;
+            }
         }
     } while (swapped);
 }
 
-void liberarMemoria(CardNode **head) { free_card_list(head); }
+void liberarMemoria(CardNode **head) {
+    free_card_list(head);
+}
+
+// Sistema de Dicas - Revelação Completa das Cartas
+void ativarDicaCompleta(CardNode *head, float *timerDica, int *dicaAtiva) {
+    printf("\n💡 DICA ATIVADA: Todas as cartas serão reveladas por 4 segundos!\n");
+    printf("🔍 Use esse tempo para memorizar as posições dos pares.\n\n");
+    
+    // Revela todas as cartas não combinadas
+    CardNode *current = head;
+    while (current != NULL) {
+        if (!current->matched) {
+            current->revealed = 1;
+        }
+        current = current->next;
+    }
+    
+    *timerDica = 4.0f;  // 4 segundos de revelação
+    *dicaAtiva = 1;
+}
+
+void desativarDicaCompleta(CardNode *head, float *timerDica, int *dicaAtiva) {
+    // Oculta todas as cartas novamente
+    CardNode *current = head;
+    while (current != NULL) {
+        if (!current->matched) {
+            current->revealed = 0;
+        }
+        current = current->next;
+    }
+    
+    *timerDica = 0.0f;
+    *dicaAtiva = 0;
+    
+    printf("🔒 Cartas ocultadas novamente. Boa sorte!\n\n");
+}
+
+// CORTEX - Sistema de Interferência Antagonista usando Bubble Sort
+void cortexInterferencia(CardNode **head, int intensidade) {
+    printf("\n🚨 CORTEX: Atividade neural não autorizada detectada!\n");
+    printf("🤖 CORTEX: Iniciando protocolo de reorganização de memória...\n");
+    
+    // Fase 1: CORTEX "organiza" usando Bubble Sort (mostrando processo)
+    printf("📊 CORTEX: Aplicando algoritmo de ordenação neural...\n");
+    ordenarCartas(head);
+    printf("⚡ CORTEX: Fragmentos organizados por classificação.\n");
+    
+    // Fase 2: Embaralha APENAS cartas NÃO descobertas
+    int totalCards = list_length(*head);
+    int activeCards = 0;
+    int *activePositions = (int*)malloc(totalCards * sizeof(int));
+    int *activeIDs = (int*)malloc(totalCards * sizeof(int));
+    
+    // Identifica cartas ainda não descobertas
+    CardNode *current = *head;
+    int position = 0;
+    while (current != NULL) {
+        if (!current->matched) {  // Só embaralha cartas não descobertas
+            activePositions[activeCards] = position;
+            activeIDs[activeCards] = current->id;
+            activeCards++;
+        }
+        current = current->next;
+        position++;
+    }
+    
+    printf("🔍 CORTEX: %d fragmentos ativos identificados para redistribuição.\n", activeCards);
+    
+    // Embaralha APENAS os IDs das cartas ativas
+    for (int round = 0; round < intensidade; round++) {
+        for (int i = activeCards - 1; i > 0; i--) {
+            int j = rand() % (i + 1);
+            int temp = activeIDs[i];
+            activeIDs[i] = activeIDs[j];
+            activeIDs[j] = temp;
+        }
+    }
+    
+    // Redistribui apenas as cartas não descobertas
+    current = *head;
+    position = 0;
+    int activeIndex = 0;
+    while (current != NULL) {
+        if (!current->matched) {  // Só altera cartas não descobertas
+            current->id = activeIDs[activeIndex];
+            activeIndex++;
+        }
+        current = current->next;
+        position++;
+    }
+    
+    free(activePositions);
+    free(activeIDs);
+    
+    printf("🔄 CORTEX: Fragmentos ativos redistribuídos. Progresso preservado.\n");
+    printf("✅ CORTEX: Ordem do sistema restaurada.\n\n");
+}
+
+// Função para criar embaralhamento extra agressivo
+void reembaralharAgressivo(CardNode **head, int multiplicador) {
+    int length = list_length(*head);
+    
+    // Faz embaralhamentos múltiplos
+    for (int i = 0; i < multiplicador * 2; i++) {
+        // Seleciona duas posições aleatórias e troca
+        int pos1 = rand() % length;
+        int pos2 = rand() % length;
+        
+        if (pos1 != pos2) {
+            CardNode *card1 = node_at(*head, pos1);
+            CardNode *card2 = node_at(*head, pos2);
+            
+            if (card1 && card2) {
+                // Troca os IDs das cartas
+                int tempId = card1->id;
+                card1->id = card2->id;
+                card2->id = tempId;
+            }
+        }
+    }
+}
 
 void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[], 
                      int frontMissing[], const char *frontNames[], 
-                     float startX, float startY, float cardW, float cardH, float pad, int boardCols) {
+                     float startX, float startY, float cardW, float cardH, float pad, int boardCols, 
+                     int dicaAtiva) {  // Novo parâmetro para indicar se dica está ativa
     CardNode *current = head;
     int index = 0;
     
@@ -157,6 +319,8 @@ void exibirTabuleiro(CardNode *head, Texture2D cardBack, Texture2D cardFronts[],
         dst.y = startY + row * (cardH + pad);
         dst.width = cardW;
         dst.height = cardH;
+        
+        // Removido efeito visual de dica para não interferir na jogabilidade
         
         if (current->matched) {
             int t = current->id;
@@ -280,6 +444,18 @@ int RunMemoryGame(int initialDifficulty) {
     int showingPreview = 1;
 
     int difficulty = initialDifficulty;
+    
+    // Sistema de Interferência da CORTEX (Antagonista)
+    int acertosConsecutivos = 0;
+    float tempoUltimaInterferencia = 0.0f;
+    int interferenciasRestantes = 3;  // Máximo de 3 interferências por jogo
+    float tempoJogo = 0.0f;
+    int cortexAlertLevel = 0;  // 0=Normal, 1=Alerta, 2=Crítico
+    
+    // Sistema de Dicas - Revelação Completa
+    int dicasRestantes = 3;  // 3 oportunidades de revelar todas as cartas
+    float timerDica = 0.0f;  // Timer para controlar duração da dica
+    int dicaAtiva = 0;       // Flag indicando se dica está ativa
 
     while (!WindowShouldClose()) {
         Vector2 mouse = GetMousePosition();
@@ -304,6 +480,40 @@ int RunMemoryGame(int initialDifficulty) {
             }
         }
 
+        // Sistema de Interferência da CORTEX
+        tempoJogo += GetFrameTime();
+        
+        // Sistema de Dicas - Controle do timer
+        if (dicaAtiva) {
+            timerDica -= GetFrameTime();
+            if (timerDica <= 0.0f) {
+                desativarDicaCompleta(cardList, &timerDica, &dicaAtiva);
+            }
+        }
+        
+        // Controle de Dicas - Tecla H para revelar todas as cartas
+        if (IsKeyPressed(KEY_H) && dicasRestantes > 0 && !dicaAtiva && !showingPreview && flipTimer <= 0) {
+            ativarDicaCompleta(cardList, &timerDica, &dicaAtiva);
+            dicasRestantes--;
+        }
+        
+        if (acertosConsecutivos >= 2 && 
+            interferenciasRestantes > 0 && 
+            (tempoJogo - tempoUltimaInterferencia) > 15.0f) {
+            
+            printf("\n🚨 CORTEX ATIVADA - Progresso excessivo detectado!\n");
+            
+            int intensidade = cortexAlertLevel + 2;
+            cortexInterferencia(&cardList, intensidade);
+            
+            acertosConsecutivos = 0;
+            interferenciasRestantes--;
+            tempoUltimaInterferencia = tempoJogo;
+            cortexAlertLevel = (cortexAlertLevel < 2) ? cortexAlertLevel + 1 : 2;
+            
+            errorFlash = 1.5f;
+        }
+
         if (flipTimer > 0) {
             printf("DEBUG: flipTimer atual = %.2f segundos\n", flipTimer);
             flipTimer -= GetFrameTime();
@@ -312,10 +522,20 @@ int RunMemoryGame(int initialDifficulty) {
                 int isMatch = verificarPar(first, second);
                 if (isMatch) {
                     matchedPairs++;
-                    if (matchedPairs >= requiredPairs) gameWon = 1;
-                    printf("Par encontrado!\n");
+                    acertosConsecutivos++;
+                    
+                    if (matchedPairs >= requiredPairs) {
+                        gameWon = 1;
+                    }
+                    printf("Par encontrado! Acertos consecutivos: %d\n", acertosConsecutivos);
+                    
+                    if (acertosConsecutivos == 1) {
+                        printf("🤖 CORTEX: Atividade neural detectada...\n");
+                    }
                 } else {
                     mistakes++;
+                    acertosConsecutivos = 0;
+                    cortexAlertLevel = 0;
                     errorFlash = 0.6f;
                     if (mistakes >= maxMistakes) {
                         gameLost = 1;
@@ -329,7 +549,7 @@ int RunMemoryGame(int initialDifficulty) {
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0 && !gameLost && !gameWon && !showingPreview) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && flipTimer <= 0 && !gameLost && !gameWon && !showingPreview && !dicaAtiva) {
             CardNode *current = cardList;
             int index = 0;
             
@@ -375,7 +595,7 @@ int RunMemoryGame(int initialDifficulty) {
         DrawText("Clique nas cartas para virar. ESC = Sair, ENTER = Reiniciar.", 36, 58, 16, Fade((Color){180,220,255,200}, 0.85f));
 
         exibirTabuleiro(cardList, cardBack, cardFronts, frontMissing, frontNames, 
-                       startX, startY, cardW, cardH, pad, boardCols);
+                       startX, startY, cardW, cardH, pad, boardCols, dicaAtiva);
 
         if (showingPreview) {
             DrawRectangle(0, 0, screenWidth, screenHeight, Fade(BLACK, 0.3f));
@@ -399,6 +619,31 @@ int RunMemoryGame(int initialDifficulty) {
                 }
             }
             DrawText(TextFormat("Erros: %d/%d", mistakes, maxMistakes), hudX + 8, hudY + 40, 14, (Color){180,200,255,200});
+            
+            const char* cortexStatus[] = {"NORMAL", "ALERTA", "CRITICO"};
+            Color cortexColors[] = {{100,255,100,200}, {255,255,100,200}, {255,100,100,200}};
+            DrawText(TextFormat("CORTEX: %s", cortexStatus[cortexAlertLevel]), hudX + 8, hudY + 70, 12, cortexColors[cortexAlertLevel]);
+            DrawText(TextFormat("Interferencias: %d restantes", interferenciasRestantes), hudX + 8, hudY + 90, 10, (Color){200,200,200,180});
+            DrawText(TextFormat("Acertos: %d consecutivos", acertosConsecutivos), hudX + 8, hudY + 110, 10, (Color){150,150,255,200});
+            
+            DrawText("Sistema de Apoio", hudX, hudY + 140, 16, (Color){100,255,100,220});
+            DrawText(TextFormat("Dicas: %d/3", dicasRestantes), hudX + 8, hudY + 165, 14, (Color){150,255,150,200});
+            if (dicasRestantes > 0) {
+                DrawText("Tecla H: Revelar cartas", hudX + 8, hudY + 190, 12, (Color){120,200,255,180});
+            } else {
+                DrawText("Dicas esgotadas", hudX + 8, hudY + 190, 12, (Color){255,120,120,180});
+            }
+            
+            if (dicaAtiva) {
+                DrawText(TextFormat("Dica ativa: %.1fs", timerDica), hudX + 8, hudY + 215, 12, (Color){255,255,100,255});
+            }
+            
+            if (acertosConsecutivos >= 2 && interferenciasRestantes > 0) {
+                float blinkTime = fmodf(tempoJogo, 1.0f);
+                if (blinkTime < 0.5f) {
+                    DrawText("CORTEX PREPARANDO INTERFERENCIA!", hudX + 8, hudY + 240, 11, (Color){255,50,50,255});
+                }
+            }
         }
 
         if (errorFlash > 0.0f) {
@@ -407,13 +652,17 @@ int RunMemoryGame(int initialDifficulty) {
         }
 
         if (gameLost) {
-            if (lostTimer > 0.0f) lostTimer -= GetFrameTime();
+            if (lostTimer > 0.0f) {
+                lostTimer -= GetFrameTime();
+            }
             DrawText("Voce perdeu a sua consciencia!", screenWidth/2 - MeasureText("Voce perdeu a sua consciencia!", 40)/2, 100, 40, RED);
             DrawText("Voltando ao jogo principal...", screenWidth/2 - MeasureText("Voltando ao jogo principal...", 20)/2, 150, 20, DARKGRAY);
             if (lostTimer <= 0.0f) {
                 liberarMemoria(&cardList);
                 UnloadTexture(cardBack);
-                for (int i = 0; i < frontCount; i++) UnloadTexture(cardFronts[i]);
+                for (int i = 0; i < frontCount; i++) {
+                    UnloadTexture(cardFronts[i]);
+                }
                 return 0;
             }
         } else if (gameWon) {
@@ -422,7 +671,9 @@ int RunMemoryGame(int initialDifficulty) {
             if (IsKeyPressed(KEY_ENTER)) {
                 liberarMemoria(&cardList);
                 UnloadTexture(cardBack);
-                for (int i = 0; i < frontCount; i++) UnloadTexture(cardFronts[i]);
+                for (int i = 0; i < frontCount; i++) {
+                    UnloadTexture(cardFronts[i]);
+                }
                 return 1;
             }
         }
@@ -430,7 +681,9 @@ int RunMemoryGame(int initialDifficulty) {
         if (IsKeyPressed(KEY_ESCAPE)) {
             liberarMemoria(&cardList);
             UnloadTexture(cardBack);
-            for (int i = 0; i < frontCount; i++) UnloadTexture(cardFronts[i]);
+            for (int i = 0; i < frontCount; i++) {
+                UnloadTexture(cardFronts[i]);
+            }
             return 0;
         }
 
@@ -439,6 +692,8 @@ int RunMemoryGame(int initialDifficulty) {
 
     liberarMemoria(&cardList);
     UnloadTexture(cardBack);
-    for (int i = 0; i < frontCount; i++) UnloadTexture(cardFronts[i]);
+    for (int i = 0; i < frontCount; i++) {
+        UnloadTexture(cardFronts[i]);
+    }
     return 0;
 }

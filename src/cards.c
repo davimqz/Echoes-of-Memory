@@ -1,19 +1,11 @@
-/*
- * src/cards.c - Echoes of Memory
- * Implementação do sistema de cartas baseado em lista encadeada
- * Lógica central do jogo de memória futurista
- */
-
 #include "cards.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 
-/* Platform-specific sleep function - definido apenas se necessário */
 void sleep_ms(int ms) {
 #ifdef _WIN32
-    /* Usamos a função Sleep do Windows se disponível */
     void __stdcall Sleep(unsigned long);
     Sleep((unsigned long)ms);
 #else
@@ -21,17 +13,13 @@ void sleep_ms(int ms) {
 #endif
 }
 
-/* Raylib para interface gráfica */
 #include "raylib.h"
 
-/* =================
- * FUNÇÕES AUXILIARES INTERNAS
- * =================*/
-
-/* Cria um novo nó de carta */
 static Carta *criarCarta(int id, TipoSimbolo simbolo) {
     Carta *nova = (Carta *)malloc(sizeof(Carta));
-    if (!nova) return NULL;
+    if (!nova) {
+        return NULL;
+    }
     
     nova->id = id;
     nova->simbolo = simbolo;
@@ -42,9 +30,10 @@ static Carta *criarCarta(int id, TipoSimbolo simbolo) {
     return nova;
 }
 
-/* Shuffle array usando Fisher-Yates */
 static void shuffleArray(TipoSimbolo *arr, int n) {
-    if (n <= 1) return;
+    if (n <= 1) {
+        return;
+    }
     
     for (int i = n - 1; i > 0; i--) {
         int j = rand() % (i + 1);
@@ -54,9 +43,10 @@ static void shuffleArray(TipoSimbolo *arr, int n) {
     }
 }
 
-/* Troca conteúdo de dois nós (para bubble sort) */
 static void trocarConteudoNos(Carta *a, Carta *b) {
-    if (!a || !b) return;
+    if (!a || !b) {
+        return;
+    }
     
     int tempId = a->id;
     TipoSimbolo tempSimbolo = a->simbolo;
@@ -74,21 +64,19 @@ static void trocarConteudoNos(Carta *a, Carta *b) {
     b->tempoRevelado = tempTempo;
 }
 
-/* =================
- * FUNÇÕES PRINCIPAIS
- * =================*/
-
 void inicializarCartas(Carta **head, int numPares) {
-    if (!head || numPares <= 0) return;
+    if (!head || numPares <= 0) {
+        return;
+    }
     
-    /* Limpa lista existente */
     liberarMemoria(head);
     
     int totalCartas = numPares * 2;
     TipoSimbolo *simbolos = (TipoSimbolo *)malloc(sizeof(TipoSimbolo) * totalCartas);
-    if (!simbolos) return;
+    if (!simbolos) {
+        return;
+    }
     
-    /* Cria pares de símbolos */
     TipoSimbolo tipos[] = {
         SIMBOLO_PIAO, SIMBOLO_PIPA, SIMBOLO_TAZO, SIMBOLO_VIDEOGAME,
         SIMBOLO_BOLA, SIMBOLO_BONECA, SIMBOLO_CARRINHO, SIMBOLO_QUEBRACABECA
@@ -101,11 +89,9 @@ void inicializarCartas(Carta **head, int numPares) {
         simbolos[2 * i + 1] = tipo;
     }
     
-    /* Embaralha os símbolos */
     srand((unsigned)time(NULL));
     shuffleArray(simbolos, totalCartas);
     
-    /* Constrói a lista encadeada */
     Carta *atual = NULL;
     for (int i = 0; i < totalCartas; i++) {
         Carta *nova = criarCarta(i + 1, simbolos[i]);
@@ -128,20 +114,19 @@ void inicializarCartas(Carta **head, int numPares) {
 }
 
 void exibirTabuleiro(Carta *head, int cols, int rows) {
-    if (!head) return;
+    if (!head) {
+        return;
+    }
     
     const int cardWidth = 80;
     const int cardHeight = 100;
     const int padding = 10;
-     /* Ajuste se houver offsets de view (definidos em main.c) - usamos variáveis fracas
-         para não depender de headers; main.c define viewOffsetX/Y como globals. Se não
-         existirem, assumimos 0. */
-     int startX = 50;
-     int startY = 100;
-     extern int viewOffsetX;
-     extern int viewOffsetY;
-     startX += viewOffsetX;
-     startY += viewOffsetY;
+    int startX = 50;
+    int startY = 100;
+    extern int viewOffsetX;
+    extern int viewOffsetY;
+    startX += viewOffsetX;
+    startY += viewOffsetY;
     
     Carta *atual = head;
     int posicao = 0;
@@ -155,21 +140,17 @@ void exibirTabuleiro(Carta *head, int cols, int rows) {
         
         Rectangle cardRect = { (float)x, (float)y, (float)cardWidth, (float)cardHeight };
         
-        /* Desenha a carta baseado no estado */
         switch (atual->estado) {
             case OCULTA:
-                /* Carta virada para baixo - tema futurista */
                 DrawRectangleRec(cardRect, DARKBLUE);
                 DrawRectangleLinesEx(cardRect, 2, SKYBLUE);
                 DrawText("CORTEX", x + 10, y + 40, 10, LIGHTGRAY);
                 break;
                 
             case REVELADA:
-                /* Carta revelada - mostra símbolo nostálgico */
                 DrawRectangleRec(cardRect, LIGHTGRAY);
                 DrawRectangleLinesEx(cardRect, 2, BLACK);
                 
-                /* Desenha símbolo baseado no tipo */
                 char simboloTexto[20];
                 Color cor = BLACK;
                 switch (atual->simbolo) {
@@ -212,7 +193,6 @@ void exibirTabuleiro(Carta *head, int cols, int rows) {
                 break;
                 
             case REMOVIDA:
-                /* Fragmento restaurado - efeito brilhante */
                 DrawRectangleRec(cardRect, GREEN);
                 DrawRectangleLinesEx(cardRect, 3, LIME);
                 DrawText("RESTORED", x + 5, y + 40, 10, WHITE);
@@ -225,13 +205,18 @@ void exibirTabuleiro(Carta *head, int cols, int rows) {
 }
 
 int escolherCarta(Carta *head, int posicao, Carta **cartaSelecionada) {
-    if (!head || !cartaSelecionada || posicao <= 0) return 0;
+    if (!head || !cartaSelecionada || posicao <= 0) {
+        return 0;
+    }
     
     Carta *carta = obterCartaPorPos(head, posicao);
-    if (!carta) return 0;
+    if (!carta) {
+        return 0;
+    }
     
-    /* Só pode escolher cartas ocultas */
-    if (carta->estado != OCULTA) return 0;
+    if (carta->estado != OCULTA) {
+        return 0;
+    }
     
     carta->estado = REVELADA;
     carta->tempoRevelado = GetTime();
@@ -241,14 +226,17 @@ int escolherCarta(Carta *head, int posicao, Carta **cartaSelecionada) {
 }
 
 int verificarPar(Carta *carta1, Carta *carta2) {
-    if (!carta1 || !carta2) return 0;
+    if (!carta1 || !carta2) {
+        return 0;
+    }
     
-    /* Verifica se são o mesmo símbolo mas cartas diferentes */
     return (carta1->simbolo == carta2->simbolo) && (carta1->id != carta2->id);
 }
 
 void ordenarCartas(Carta **head) {
-    if (!head || !*head) return;
+    if (!head || !*head) {
+        return;
+    }
     
     printf("🧠 CORTEX está reorganizando os fragmentos de memória...\n");
     
@@ -270,8 +258,6 @@ void ordenarCartas(Carta **head) {
             if (deveTracar) {
                 trocarConteudoNos(atual, atual->next);
                 trocou = 1;
-                
-                /* Efeito visual de reorganização */
                 sleep_ms(50);
             }
             
@@ -283,7 +269,9 @@ void ordenarCartas(Carta **head) {
 }
 
 void jogadaIA(EstadoJogo *estado, int *sugestaoPos1, int *sugestaoPos2) {
-    if (!estado || !estado->head || !sugestaoPos1 || !sugestaoPos2) return;
+    if (!estado || !estado->head || !sugestaoPos1 || !sugestaoPos2) {
+        return;
+    }
     
     *sugestaoPos1 = -1;
     *sugestaoPos2 = -1;
@@ -299,10 +287,8 @@ void jogadaIA(EstadoJogo *estado, int *sugestaoPos1, int *sugestaoPos2) {
             
             while (carta2) {
                 if (carta2->estado == OCULTA && carta1->simbolo == carta2->simbolo) {
-                    /* CORTEX encontrou um par! */
                     *sugestaoPos1 = pos1;
                     *sugestaoPos2 = pos2;
-                    
                     printf("🤖 CORTEX detectou padrão nas posições %d e %d\n", pos1, pos2);
                     return;
                 }
@@ -314,7 +300,6 @@ void jogadaIA(EstadoJogo *estado, int *sugestaoPos1, int *sugestaoPos2) {
         pos1++;
     }
     
-    /* Se não encontrou par, sugere posições aleatórias */
     int totalCartas = contarCartasAtivas(estado->head);
     if (totalCartas >= 2) {
         *sugestaoPos1 = (rand() % totalCartas) + 1;
@@ -327,7 +312,9 @@ void jogadaIA(EstadoJogo *estado, int *sugestaoPos1, int *sugestaoPos2) {
 }
 
 void liberarMemoria(Carta **head) {
-    if (!head || !*head) return;
+    if (!head || !*head) {
+        return;
+    }
     
     Carta *atual = *head;
     while (atual) {
@@ -339,24 +326,24 @@ void liberarMemoria(Carta **head) {
     *head = NULL;
 }
 
-/* =================
- * FUNÇÕES AUXILIARES
- * =================*/
-
 void posicaoParaGrid(int posicao, int cols, int *linha, int *coluna) {
-    if (!linha || !coluna || posicao <= 0) return;
+    if (!linha || !coluna || posicao <= 0) {
+        return;
+    }
     
-    int pos = posicao - 1; /* Converte para 0-based */
+    int pos = posicao - 1;
     *linha = pos / cols;
     *coluna = pos % cols;
 }
 
 int gridParaPosicao(int linha, int coluna, int cols) {
-    return (linha * cols + coluna) + 1; /* Converte para 1-based */
+    return (linha * cols + coluna) + 1;
 }
 
 Carta *obterCartaPorPos(Carta *head, int posicao) {
-    if (!head || posicao <= 0) return NULL;
+    if (!head || posicao <= 0) {
+        return NULL;
+    }
     
     Carta *atual = head;
     int pos = 1;
@@ -384,7 +371,9 @@ int contarCartasAtivas(Carta *head) {
 }
 
 void embaralharCartas(Carta **head) {
-    if (!head || !*head) return;
+    if (!head || !*head) {
+        return;
+    }
     
     /* Conta cartas */
     int total = 0;
@@ -394,11 +383,14 @@ void embaralharCartas(Carta **head) {
         atual = atual->next;
     }
     
-    if (total <= 1) return;
+    if (total <= 1) {
+        return;
+    }
     
-    /* Cria array de ponteiros */
     Carta **array = (Carta **)malloc(sizeof(Carta *) * total);
-    if (!array) return;
+    if (!array) {
+        return;
+    }
     
     atual = *head;
     for (int i = 0; i < total; i++) {
@@ -406,7 +398,6 @@ void embaralharCartas(Carta **head) {
         atual = atual->next;
     }
     
-    /* Embaralha conteúdos */
     for (int i = total - 1; i > 0; i--) {
         int j = rand() % (i + 1);
         trocarConteudoNos(array[i], array[j]);
@@ -432,7 +423,9 @@ void imprimirEstadoCartas(Carta *head) {
 }
 
 int calcularScore(EstadoJogo *estado) {
-    if (!estado) return 0;
+    if (!estado) {
+        return 0;
+    }
     
     int scoreBase = estado->paresEncontrados * 1000;
     int penalTempo = (int)(estado->tempoJogo * 10);
