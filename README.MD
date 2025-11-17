@@ -211,7 +211,6 @@ Este projeto faz parte de uma atividade acadêmica do Módulo 02. Para contribui
 3. Implemente as mudanças seguindo a estrutura documentada
 4. Teste localmente
 5. Submeta um pull request
-
 ---
 
 ## Licença
