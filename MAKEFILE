@@ -18,7 +18,7 @@ all: $(TARGET).exe
 $(TARGET).exe: $(SOURCES)
 	@echo Compilando Echoes of Memory...
 	@$(CC) -o $@ $(SOURCES) $(CFLAGS) $(LDFLAGS)
-	@echo ✅ Compilação concluída!
+	@echo ✅ Compilação concluída
 
 run: all
 	@echo 🎮 Executando Echoes of Memory...
@@ -27,4 +27,4 @@ run: all
 clean:
 	@echo 🧹 Limpando arquivos...
 	@rm -f $(TARGET).exe
-	@echo ✅ Limpeza concluída!
+	@echo ✅ Limpeza concluída
